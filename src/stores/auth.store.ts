@@ -6,19 +6,22 @@ import { mockUsers } from '@/lib/mock-data'
 interface AuthState {
   user: User | null
   isAuthenticated: boolean
-  login: (email: string) => boolean
+  login: (email: string, password: string) => boolean
   logout: () => void
 }
 
 const useAuthStore = create<AuthState>((set) => ({
   user: storage.getItem<User>('user'),
   isAuthenticated: !!storage.getItem<User>('user'),
-  login: (email: string) => {
-    // In a real app, you'd verify password as well
-    const foundUser = mockUsers.find((u) => u.email === email)
+  login: (email: string, password: string) => {
+    const foundUser = mockUsers.find(
+      (u) => u.email === email && u.password === password,
+    )
     if (foundUser) {
-      storage.setItem('user', foundUser)
-      set({ user: foundUser, isAuthenticated: true })
+      const userToStore = { ...foundUser }
+      delete userToStore.password // Do not store password in local storage
+      storage.setItem('user', userToStore)
+      set({ user: userToStore, isAuthenticated: true })
       return true
     }
     return false

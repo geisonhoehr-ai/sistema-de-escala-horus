@@ -47,7 +47,7 @@ export default function LoginPage() {
   const onSubmit = (data: LoginFormValues) => {
     setIsLoading(true)
     setTimeout(() => {
-      const success = login(data.email)
+      const success = login(data.email, data.password)
       if (success) {
         navigate('/')
       } else {
@@ -122,6 +122,16 @@ export default function LoginPage() {
               </Button>
             </form>
           </Form>
+          <div className="mt-4 text-center text-sm text-muted-foreground">
+            <p>
+              Admin: <strong>admin@escala.mil</strong> / Senha:{' '}
+              <strong>admin</strong>
+            </p>
+            <p>
+              Militar: <strong>joao@escala.mil</strong> / Senha:{' '}
+              <strong>user123</strong>
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>
