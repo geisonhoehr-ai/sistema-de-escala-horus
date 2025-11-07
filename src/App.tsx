@@ -1,31 +1,64 @@
-/* Main App Component - Handles routing (using react-router-dom), query client and other providers - use this file to add all routes */
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import Index from './pages/Index'
-import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
+import LoginPage from './pages/Login'
+import DashboardPage from './pages/Dashboard'
+import ScalesListPage from './pages/scales/ScalesListPage'
+import ScaleDetailsPage from './pages/scales/ScaleDetailsPage'
+import MilitaryListPage from './pages/military/MilitaryListPage'
+import MilitaryProfilePage from './pages/military/MilitaryProfilePage'
+import AdminUsersPage from './pages/admin/AdminUsersPage'
+import AdminScalesPage from './pages/admin/AdminScalesPage'
+import AdminPermissionsPage from './pages/admin/AdminPermissionsPage'
+import NotFound from './pages/NotFound'
+import { ProtectedRoute } from './components/ProtectedRoute'
+import useAuthStore from './stores/auth.store'
 
-// ONLY IMPORT AND RENDER WORKING PAGES, NEVER ADD PLACEHOLDER COMPONENTS OR PAGES IN THIS FILE
-// AVOID REMOVING ANY CONTEXT PROVIDERS FROM THIS FILE (e.g. TooltipProvider, Toaster, Sonner)
+const App = () => {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
 
-const App = () => (
-  <BrowserRouter
-    future={{ v7_startTransition: false, v7_relativeSplatPath: false }}
-  >
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES MUST BE ADDED HERE */}
-        </Route>
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </TooltipProvider>
-  </BrowserRouter>
-)
+  return (
+    <BrowserRouter>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <Routes>
+          <Route
+            path="/login"
+            element={isAuthenticated ? <Navigate to="/" /> : <LoginPage />}
+          />
+
+          <Route element={<ProtectedRoute />}>
+            <Route element={<Layout />}>
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/scales" element={<ScalesListPage />} />
+              <Route path="/scales/:scaleId" element={<ScaleDetailsPage />} />
+              <Route path="/military" element={<MilitaryListPage />} />
+              <Route
+                path="/military/:militaryId"
+                element={<MilitaryProfilePage />}
+              />
+            </Route>
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
+            <Route element={<Layout />}>
+              <Route path="/admin/users" element={<AdminUsersPage />} />
+              <Route path="/admin/scales" element={<AdminScalesPage />} />
+              <Route
+                path="/admin/permissions"
+                element={<AdminPermissionsPage />}
+              />
+            </Route>
+          </Route>
+
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </TooltipProvider>
+    </BrowserRouter>
+  )
+}
 
 export default App
