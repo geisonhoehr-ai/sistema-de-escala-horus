@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -19,11 +20,26 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import useDataStore from '@/stores/data.store'
 import useAuthStore from '@/stores/auth.store'
+import { Military } from '@/types'
+import { EditMilitaryDialog } from '@/components/EditMilitaryDialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 
 export default function MilitaryListPage() {
-  const { military, scales } = useDataStore()
+  const { military, scales, deleteMilitary } = useDataStore()
   const { user } = useAuthStore()
   const isAdmin = user?.role === 'Admin'
+  const [editingMilitary, setEditingMilitary] = useState<Military | null>(null)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
 
   const getInitials = (name: string) =>
     name
@@ -31,6 +47,11 @@ export default function MilitaryListPage() {
       .map((n) => n[0])
       .join('')
       .toUpperCase()
+
+  const handleEdit = (m: Military) => {
+    setEditingMilitary(m)
+    setIsEditDialogOpen(true)
+  }
 
   return (
     <div className="space-y-6 animate-fade-in-up">
@@ -91,14 +112,40 @@ export default function MilitaryListPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEdit(m)}>
                               <Edit className="mr-2 h-4 w-4" />
                               Editar
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600">
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Excluir
-                            </DropdownMenuItem>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <button className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-red-600">
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Excluir
+                                </button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    Tem certeza?
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Esta ação não pode ser desfeita. Isso
+                                    excluirá permanentemente o militar "{m.name}
+                                    ".
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>
+                                    Cancelar
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteMilitary(m.id)}
+                                  >
+                                    Excluir
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       )}
@@ -110,6 +157,13 @@ export default function MilitaryListPage() {
           </Table>
         </CardContent>
       </Card>
+      {editingMilitary && (
+        <EditMilitaryDialog
+          militaryPerson={editingMilitary}
+          isOpen={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+        />
+      )}
     </div>
   )
 }

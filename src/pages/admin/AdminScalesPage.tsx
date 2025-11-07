@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -17,9 +18,29 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import useDataStore from '@/stores/data.store'
+import { Scale } from '@/types'
+import { EditScaleDialog } from '@/components/EditScaleDialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 
 export default function AdminScalesPage() {
-  const { scales } = useDataStore()
+  const { scales, deleteScale } = useDataStore()
+  const [editingScale, setEditingScale] = useState<Scale | null>(null)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+
+  const handleEdit = (scale: Scale) => {
+    setEditingScale(scale)
+    setIsEditDialogOpen(true)
+  }
 
   return (
     <div className="space-y-6 animate-fade-in-up">
@@ -72,14 +93,35 @@ export default function AdminScalesPage() {
                             Ver Detalhes
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEdit(scale)}>
                           <Edit className="mr-2 h-4 w-4" />
                           Editar
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Excluir
-                        </DropdownMenuItem>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <button className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-red-600">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Excluir
+                            </button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta ação não pode ser desfeita. Isso excluirá
+                                permanentemente a escala "{scale.name}".
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteScale(scale.id)}
+                              >
+                                Excluir
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -89,6 +131,13 @@ export default function AdminScalesPage() {
           </Table>
         </CardContent>
       </Card>
+      {editingScale && (
+        <EditScaleDialog
+          scale={editingScale}
+          isOpen={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+        />
+      )}
     </div>
   )
 }

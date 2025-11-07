@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -24,9 +25,24 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import useDataStore from '@/stores/data.store'
+import { User } from '@/types'
+import { EditUserDialog } from '@/components/EditUserDialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 
 export default function AdminUsersPage() {
-  const { users, scales } = useDataStore()
+  const { users, scales, deleteUser } = useDataStore()
+  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
 
   const getInitials = (name: string) =>
     name
@@ -34,6 +50,11 @@ export default function AdminUsersPage() {
       .map((n) => n[0])
       .join('')
       .toUpperCase()
+
+  const handleEdit = (user: User) => {
+    setEditingUser(user)
+    setIsEditDialogOpen(true)
+  }
 
   return (
     <div className="space-y-6 animate-fade-in-up">
@@ -100,7 +121,7 @@ export default function AdminUsersPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEdit(user)}>
                           <Edit className="mr-2 h-4 w-4" />
                           Editar
                         </DropdownMenuItem>
@@ -108,10 +129,31 @@ export default function AdminUsersPage() {
                           <KeyRound className="mr-2 h-4 w-4" />
                           Redefinir Senha
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Excluir
-                        </DropdownMenuItem>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <button className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-red-600">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Excluir
+                            </button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta ação não pode ser desfeita. Isso excluirá
+                                permanentemente o usuário "{user.name}".
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteUser(user.id)}
+                              >
+                                Excluir
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -121,6 +163,13 @@ export default function AdminUsersPage() {
           </Table>
         </CardContent>
       </Card>
+      {editingUser && (
+        <EditUserDialog
+          user={editingUser}
+          isOpen={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+        />
+      )}
     </div>
   )
 }

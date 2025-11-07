@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -20,10 +21,24 @@ import {
 } from '@/components/ui/table'
 import { Mail, Phone, PlusCircle, Edit, Trash2 } from 'lucide-react'
 import useDataStore from '@/stores/data.store'
+import { Unavailability } from '@/types'
+import { ManageUnavailabilityDialog } from '@/components/ManageUnavailabilityDialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 
 export default function MilitaryProfilePage() {
   const { militaryId } = useParams<{ militaryId: string }>()
-  const { military, unavailabilities, scales } = useDataStore()
+  const { military, unavailabilities, scales, deleteUnavailability } =
+    useDataStore()
   const person = military.find((m) => m.id === militaryId)
   const personUnavailabilities = unavailabilities.filter(
     (u) => u.militaryId === militaryId,
@@ -35,6 +50,22 @@ export default function MilitaryProfilePage() {
         .map((service) => ({ ...service, scaleName: scale.name })),
     )
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+  const [isUnavailabilityDialogOpen, setIsUnavailabilityDialogOpen] =
+    useState(false)
+  const [editingUnavailability, setEditingUnavailability] = useState<
+    Unavailability | undefined
+  >(undefined)
+
+  const handleAddUnavailability = () => {
+    setEditingUnavailability(undefined)
+    setIsUnavailabilityDialogOpen(true)
+  }
+
+  const handleEditUnavailability = (unavailability: Unavailability) => {
+    setEditingUnavailability(unavailability)
+    setIsUnavailabilityDialogOpen(true)
+  }
 
   if (!person) return <div>Militar não encontrado.</div>
 
@@ -72,7 +103,7 @@ export default function MilitaryProfilePage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Indisponibilidades</CardTitle>
-            <Button size="sm">
+            <Button size="sm" onClick={handleAddUnavailability}>
               <PlusCircle className="mr-2 h-4 w-4" /> Adicionar
             </Button>
           </CardHeader>
@@ -98,16 +129,41 @@ export default function MilitaryProfilePage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Edit className="h-4 w-4" />
-                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-red-500"
+                          className="h-8 w-8"
+                          onClick={() => handleEditUnavailability(u)}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Edit className="h-4 w-4" />
                         </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-red-500"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta ação não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteUnavailability(u.id)}
+                              >
+                                Excluir
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -148,6 +204,14 @@ export default function MilitaryProfilePage() {
           </CardContent>
         </Card>
       </div>
+      {isUnavailabilityDialogOpen && (
+        <ManageUnavailabilityDialog
+          isOpen={isUnavailabilityDialogOpen}
+          onOpenChange={setIsUnavailabilityDialogOpen}
+          militaryId={person.id}
+          unavailability={editingUnavailability}
+        />
+      )}
     </div>
   )
 }
