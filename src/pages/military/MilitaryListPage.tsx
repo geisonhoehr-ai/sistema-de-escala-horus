@@ -21,7 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import useDataStore from '@/stores/data.store'
 import useAuthStore from '@/stores/auth.store'
 import { Military } from '@/types'
-import { EditMilitaryDialog } from '@/components/EditMilitaryDialog'
+import { ManageMilitaryDialog } from '@/components/ManageMilitaryDialog'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,8 +38,10 @@ export default function MilitaryListPage() {
   const { military, scales, deleteMilitary } = useDataStore()
   const { user } = useAuthStore()
   const isAdmin = user?.role === 'Admin'
-  const [editingMilitary, setEditingMilitary] = useState<Military | null>(null)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editingMilitary, setEditingMilitary] = useState<Military | undefined>(
+    undefined,
+  )
+  const [isManageDialogOpen, setIsManageDialogOpen] = useState(false)
 
   const getInitials = (name: string) =>
     name
@@ -48,9 +50,14 @@ export default function MilitaryListPage() {
       .join('')
       .toUpperCase()
 
+  const handleCreate = () => {
+    setEditingMilitary(undefined)
+    setIsManageDialogOpen(true)
+  }
+
   const handleEdit = (m: Military) => {
     setEditingMilitary(m)
-    setIsEditDialogOpen(true)
+    setIsManageDialogOpen(true)
   }
 
   return (
@@ -63,7 +70,7 @@ export default function MilitaryListPage() {
           </p>
         </div>
         {isAdmin && (
-          <Button>
+          <Button onClick={handleCreate}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Adicionar Novo Militar
           </Button>
@@ -157,11 +164,11 @@ export default function MilitaryListPage() {
           </Table>
         </CardContent>
       </Card>
-      {editingMilitary && (
-        <EditMilitaryDialog
+      {isManageDialogOpen && (
+        <ManageMilitaryDialog
           militaryPerson={editingMilitary}
-          isOpen={isEditDialogOpen}
-          onOpenChange={setIsEditDialogOpen}
+          isOpen={isManageDialogOpen}
+          onOpenChange={setIsManageDialogOpen}
         />
       )}
     </div>

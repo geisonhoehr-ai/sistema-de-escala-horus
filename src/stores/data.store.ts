@@ -26,10 +26,12 @@ interface DataState {
   users: User[]
   activeScaleId: string | null
   setActiveScaleId: (id: string | null) => void
+  addScale: (newScale: Omit<Scale, 'id' | 'services' | 'reservations'>) => void
   updateScale: (updatedScale: Partial<Scale> & { id: string }) => void
   deleteScale: (scaleId: string) => void
   updateUser: (updatedUser: Partial<User> & { id: string }) => void
   deleteUser: (userId: string) => void
+  addMilitary: (newMilitary: Omit<Military, 'id'>) => void
   updateMilitary: (updatedMilitary: Partial<Military> & { id: string }) => void
   deleteMilitary: (militaryId: string) => void
   addUnavailability: (newUnavailability: Omit<Unavailability, 'id'>) => void
@@ -60,6 +62,18 @@ const useDataStore = create<DataState>()(
       users: mockUsers,
       activeScaleId: mockScales.length > 0 ? mockScales[0].id : null,
       setActiveScaleId: (id) => set({ activeScaleId: id }),
+      addScale: (newScale) =>
+        set((state) => ({
+          scales: [
+            ...state.scales,
+            {
+              ...newScale,
+              id: `scale-${Date.now()}`,
+              services: [],
+              reservations: [],
+            },
+          ],
+        })),
       updateScale: (updatedScale) =>
         set((state) => ({
           scales: state.scales.map((scale) =>
@@ -81,6 +95,13 @@ const useDataStore = create<DataState>()(
       deleteUser: (userId) =>
         set((state) => ({
           users: state.users.filter((user) => user.id !== userId),
+        })),
+      addMilitary: (newMilitary) =>
+        set((state) => ({
+          military: [
+            ...state.military,
+            { ...newMilitary, id: `mil-${Date.now()}` },
+          ],
         })),
       updateMilitary: (updatedMilitary) =>
         set((state) => ({

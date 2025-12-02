@@ -1,21 +1,20 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@/components/ui/table' // Import fixed
+import {
+  Card as CardComponent,
+  CardContent as CardContentComponent,
+} from '@/components/ui/card'
 import { MoreHorizontal, PlusCircle, Trash2, Edit } from 'lucide-react'
 import {
   DropdownMenu,
@@ -25,11 +24,36 @@ import {
 } from '@/components/ui/dropdown-menu'
 import useDataStore from '@/stores/data.store'
 import useAuthStore from '@/stores/auth.store'
+import { ManageScaleDialog } from '@/components/ManageScaleDialog'
+import { Scale } from '@/types'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 
 export default function ScalesListPage() {
-  const { scales } = useDataStore()
+  const { scales, deleteScale } = useDataStore()
   const { user } = useAuthStore()
   const isAdmin = user?.role === 'Admin'
+  const [editingScale, setEditingScale] = useState<Scale | undefined>(undefined)
+  const [isManageDialogOpen, setIsManageDialogOpen] = useState(false)
+
+  const handleCreate = () => {
+    setEditingScale(undefined)
+    setIsManageDialogOpen(true)
+  }
+
+  const handleEdit = (scale: Scale) => {
+    setEditingScale(scale)
+    setIsManageDialogOpen(true)
+  }
 
   return (
     <div className="space-y-6 animate-fade-in-up">
@@ -41,15 +65,15 @@ export default function ScalesListPage() {
           </p>
         </div>
         {isAdmin && (
-          <Button>
+          <Button onClick={handleCreate}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Criar Nova Escala
           </Button>
         )}
       </div>
 
-      <Card>
-        <CardContent className="p-0">
+      <CardComponent>
+        <CardContentComponent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -85,14 +109,38 @@ export default function ScalesListPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEdit(scale)}>
                               <Edit className="mr-2 h-4 w-4" />
                               Editar
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600">
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Excluir
-                            </DropdownMenuItem>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <button className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-red-600">
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Excluir
+                                </button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    Tem certeza?
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Esta ação não pode ser desfeita.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>
+                                    Cancelar
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteScale(scale.id)}
+                                  >
+                                    Excluir
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       )}
@@ -102,8 +150,15 @@ export default function ScalesListPage() {
               ))}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        </CardContentComponent>
+      </CardComponent>
+      {isManageDialogOpen && (
+        <ManageScaleDialog
+          scale={editingScale}
+          isOpen={isManageDialogOpen}
+          onOpenChange={setIsManageDialogOpen}
+        />
+      )}
     </div>
   )
 }

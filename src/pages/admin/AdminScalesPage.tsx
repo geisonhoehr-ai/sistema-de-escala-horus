@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import useDataStore from '@/stores/data.store'
 import { Scale } from '@/types'
-import { EditScaleDialog } from '@/components/EditScaleDialog'
+import { ManageScaleDialog } from '@/components/ManageScaleDialog'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,12 +34,17 @@ import {
 
 export default function AdminScalesPage() {
   const { scales, deleteScale } = useDataStore()
-  const [editingScale, setEditingScale] = useState<Scale | null>(null)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editingScale, setEditingScale] = useState<Scale | undefined>(undefined)
+  const [isManageDialogOpen, setIsManageDialogOpen] = useState(false)
+
+  const handleCreate = () => {
+    setEditingScale(undefined)
+    setIsManageDialogOpen(true)
+  }
 
   const handleEdit = (scale: Scale) => {
     setEditingScale(scale)
-    setIsEditDialogOpen(true)
+    setIsManageDialogOpen(true)
   }
 
   return (
@@ -51,7 +56,7 @@ export default function AdminScalesPage() {
             Crie, edite ou exclua escalas de serviço.
           </p>
         </div>
-        <Button>
+        <Button onClick={handleCreate}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Criar Nova Escala
         </Button>
@@ -131,11 +136,11 @@ export default function AdminScalesPage() {
           </Table>
         </CardContent>
       </Card>
-      {editingScale && (
-        <EditScaleDialog
+      {isManageDialogOpen && (
+        <ManageScaleDialog
           scale={editingScale}
-          isOpen={isEditDialogOpen}
-          onOpenChange={setIsEditDialogOpen}
+          isOpen={isManageDialogOpen}
+          onOpenChange={setIsManageDialogOpen}
         />
       )}
     </div>

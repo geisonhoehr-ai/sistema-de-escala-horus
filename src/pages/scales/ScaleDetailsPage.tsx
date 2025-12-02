@@ -16,7 +16,6 @@ import {
   ChevronRight,
   Users,
   Info,
-  Plus,
   Sparkles,
   Trash2,
 } from 'lucide-react'
@@ -103,6 +102,7 @@ export default function ScaleDetailsPage() {
   const getDayColor = (date: Date) => {
     const day = date.getDate()
     const month = date.getMonth()
+    // Month is 0-indexed (0 = Jan, 11 = Dec)
     if ((month === 11 && day === 25) || (month === 0 && day === 1))
       return 'text-special'
     if (isWeekend(date)) return 'text-destructive'
@@ -205,7 +205,7 @@ export default function ScaleDetailsPage() {
                       key={day.toString()}
                       onClick={() => handleDayClick(day)}
                       className={cn(
-                        'border-r border-b p-2 h-32 flex flex-col cursor-pointer hover:bg-accent transition-colors',
+                        'border-r border-b p-2 h-32 flex flex-col cursor-pointer hover:bg-accent transition-colors group',
                         !isSameMonth(day, currentDate) && 'bg-muted/50',
                       )}
                     >
@@ -218,7 +218,7 @@ export default function ScaleDetailsPage() {
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <div className="flex flex-col items-center justify-center flex-grow text-center">
+                              <div className="flex flex-col items-center justify-center flex-grow text-center w-full">
                                 <Avatar className="h-8 w-8 mb-1">
                                   <AvatarImage
                                     src={militaryOnService.avatarUrl}
@@ -227,7 +227,7 @@ export default function ScaleDetailsPage() {
                                     {getInitials(militaryOnService.name)}
                                   </AvatarFallback>
                                 </Avatar>
-                                <p className="text-xs font-medium truncate w-full">
+                                <p className="text-xs font-medium truncate w-full px-1">
                                   {militaryOnService.name}
                                 </p>
                                 <div className="flex gap-1 mt-1">
@@ -245,6 +245,11 @@ export default function ScaleDetailsPage() {
                               {reservation && (
                                 <p>
                                   {reservation.militaryIds.length} na reserva.
+                                </p>
+                              )}
+                              {service.observations && (
+                                <p className="max-w-xs">
+                                  Obs: {service.observations}
                                 </p>
                               )}
                             </TooltipContent>
@@ -313,12 +318,15 @@ export default function ScaleDetailsPage() {
                   <SelectValue placeholder="Selecione um militar" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhum</SelectItem>
-                  {military.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.name}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="none">Nenhum</SelectItem>
+                  {scale.associatedMilitaryIds.map((id) => {
+                    const m = getMilitaryById(id)
+                    return m ? (
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.name}
+                      </SelectItem>
+                    ) : null
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -332,7 +340,7 @@ export default function ScaleDetailsPage() {
             </div>
             <div>
               <Label>Reservas do Dia</Label>
-              <div className="space-y-2">
+              <div className="space-y-2 mt-2">
                 {reservationMilitaryIds.map((id) => {
                   const m = getMilitaryById(id)
                   return (
@@ -357,6 +365,7 @@ export default function ScaleDetailsPage() {
                   )
                 })}
                 <Select
+                  value=""
                   onValueChange={(value) => {
                     if (value && !reservationMilitaryIds.includes(value)) {
                       setReservationMilitaryIds((prev) => [...prev, value])
@@ -367,13 +376,16 @@ export default function ScaleDetailsPage() {
                     <SelectValue placeholder="Adicionar militar à reserva" />
                   </SelectTrigger>
                   <SelectContent>
-                    {military
-                      .filter((m) => !reservationMilitaryIds.includes(m.id))
-                      .map((m) => (
-                        <SelectItem key={m.id} value={m.id}>
-                          {m.name}
-                        </SelectItem>
-                      ))}
+                    {scale.associatedMilitaryIds
+                      .filter((id) => !reservationMilitaryIds.includes(id))
+                      .map((id) => {
+                        const m = getMilitaryById(id)
+                        return m ? (
+                          <SelectItem key={m.id} value={m.id}>
+                            {m.name}
+                          </SelectItem>
+                        ) : null
+                      })}
                   </SelectContent>
                 </Select>
               </div>
