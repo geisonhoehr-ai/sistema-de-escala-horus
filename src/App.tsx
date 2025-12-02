@@ -1,7 +1,9 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { Loader2 } from 'lucide-react'
 import Layout from './components/Layout'
 import LoginPage from './pages/Login'
 import DashboardPage from './pages/Dashboard'
@@ -18,7 +20,19 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import useAuthStore from './stores/auth.store'
 
 const App = () => {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const { isAuthenticated, initialize, isLoading } = useAuthStore()
+
+  useEffect(() => {
+    initialize()
+  }, [initialize])
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
 
   return (
     <BrowserRouter>

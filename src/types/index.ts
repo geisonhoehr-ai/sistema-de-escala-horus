@@ -1,27 +1,22 @@
-export type UserRole = 'Admin' | 'Militar'
-
 export interface User {
   id: string
   name: string
   email: string
+  role: 'Admin' | 'Militar' | string
   password?: string
-  role: UserRole
-  avatarUrl: string
-  associatedScales: string[]
+  avatarUrl?: string
+  associatedScales?: string[]
 }
 
 export interface Military {
   id: string
   name: string
-  rank: string // Patente/Graduação
-  avatarUrl: string
+  rank: string
+  avatarUrl?: string
   email: string
   phone: string
   associatedScales: string[]
 }
-
-// Changed from union type to string to support dynamic types
-export type UnavailabilityType = string
 
 export interface UnavailabilityTypeDefinition {
   id: string
@@ -31,7 +26,7 @@ export interface UnavailabilityTypeDefinition {
 export interface Unavailability {
   id: string
   militaryId: string
-  type: UnavailabilityType
+  type: string
   startDate: Date
   endDate: Date
   observations?: string
@@ -41,12 +36,11 @@ export interface Service {
   id: string
   date: Date
   militaryId: string
-  startTime?: string
-  endTime?: string
-  observations?: string
+  startTime: string
+  endTime: string
 }
 
-export interface DailyReservation {
+export interface Reservation {
   date: Date
   militaryIds: string[]
 }
@@ -57,13 +51,13 @@ export interface Scale {
   description: string
   associatedMilitaryIds: string[]
   services: Service[]
-  reservations: DailyReservation[]
+  reservations: Reservation[]
 }
 
 export interface Notification {
   id: string
   message: string
-  type: 'info' | 'warning' | 'error'
+  type: 'info' | 'warning' | 'error' | 'success'
   read: boolean
   createdAt: Date
 }

@@ -1,16 +1,16 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/auth.store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
@@ -19,14 +19,15 @@ import {
   FormControl,
   FormField,
   FormItem,
+  FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { toast } from '@/components/ui/use-toast'
-import { ShieldCheck } from 'lucide-react'
+import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
 
 const loginSchema = z.object({
-  email: z.string().email({ message: 'Por favor, insira um email válido.' }),
-  password: z.string().min(1, { message: 'A senha é obrigatória.' }),
+  email: z.string().email('Email inválido'),
+  password: z.string().min(1, 'A senha é obrigatória'),
 })
 
 type LoginFormValues = z.infer<typeof loginSchema>
@@ -44,53 +45,46 @@ export default function LoginPage() {
     },
   })
 
-  const onSubmit = (data: LoginFormValues) => {
+  const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true)
-    setTimeout(() => {
-      const success = login(data.email, data.password)
+    try {
+      const success = await login(data.email, data.password)
       if (success) {
+        toast.success('Login realizado com sucesso')
         navigate('/')
       } else {
-        toast({
-          variant: 'destructive',
-          title: 'Erro de Login',
-          description: 'Email ou senha inválidos. Tente novamente.',
-        })
+        toast.error('Credenciais inválidas')
       }
+    } catch (error) {
+      console.error(error)
+      toast.error('Erro ao realizar login')
+    } finally {
       setIsLoading(false)
-    }, 1000)
+    }
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-secondary p-4">
-      <Card className="w-full max-w-md animate-fade-in-up">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <ShieldCheck className="h-12 w-12 text-primary" />
-          </div>
-          <CardTitle className="text-2xl font-bold">
-            Sistema de Escala Inteligente
+    <div className="flex min-h-screen w-full items-center justify-center bg-muted/40 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center">
+            Sistema de Escala
           </CardTitle>
-          <CardDescription>
-            Bem-vindo! Faça login para continuar.
+          <CardDescription className="text-center">
+            Entre com suas credenciais para acessar
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <Label htmlFor="email">Email</Label>
+                    <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="seu.email@escala.mil"
-                        {...field}
-                      />
+                      <Input placeholder="seu@email.mil" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -101,38 +95,24 @@ export default function LoginPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex justify-between items-center">
-                      <Label htmlFor="password">Senha</Label>
-                      <a
-                        href="#"
-                        className="text-sm text-primary hover:underline"
-                      >
-                        Esqueceu sua senha?
-                      </a>
-                    </div>
+                    <FormLabel>Senha</FormLabel>
                     <FormControl>
-                      <Input id="password" type="password" {...field} />
+                      <Input type="password" placeholder="******" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Entrando...' : 'Entrar'}
+              <Button className="w-full" type="submit" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Entrar
               </Button>
             </form>
           </Form>
-          <div className="mt-4 text-center text-sm text-muted-foreground">
-            <p>
-              Admin: <strong>admin@escala.mil</strong> / Senha:{' '}
-              <strong>admin</strong>
-            </p>
-            <p>
-              Militar: <strong>joao@escala.mil</strong> / Senha:{' '}
-              <strong>user123</strong>
-            </p>
-          </div>
         </CardContent>
+        <CardFooter className="justify-center text-sm text-muted-foreground">
+          <p>Contate o administrador se esqueceu sua senha</p>
+        </CardFooter>
       </Card>
     </div>
   )
