@@ -30,7 +30,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import useDataStore from '@/stores/data.store'
 import { Military } from '@/types'
-import { Pencil } from 'lucide-react'
+import { Edit } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 const formSchema = z.object({
@@ -44,9 +44,13 @@ const formSchema = z.object({
 
 interface EditMilitaryDialogProps {
   military: Military
+  trigger?: React.ReactNode
 }
 
-export const EditMilitaryDialog = ({ military }: EditMilitaryDialogProps) => {
+export const EditMilitaryDialog = ({
+  military,
+  trigger,
+}: EditMilitaryDialogProps) => {
   const [open, setOpen] = useState(false)
   const { updateMilitary } = useDataStore()
   const { toast } = useToast()
@@ -56,8 +60,8 @@ export const EditMilitaryDialog = ({ military }: EditMilitaryDialogProps) => {
     defaultValues: {
       name: military.name,
       rank: military.rank,
-      unit: military.unit || '',
-      status: military.status || 'Active',
+      unit: military.unit,
+      status: military.status,
       email: military.email,
       phone: military.phone,
     },
@@ -69,7 +73,7 @@ export const EditMilitaryDialog = ({ military }: EditMilitaryDialogProps) => {
         id: military.id,
         ...values,
       })
-      toast({ title: 'Military updated successfully' })
+      toast({ title: 'Military profile updated' })
       setOpen(false)
     } catch (error) {
       toast({
@@ -83,16 +87,20 @@ export const EditMilitaryDialog = ({ military }: EditMilitaryDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Pencil className="mr-2 h-4 w-4" />
-          Edit Profile
-        </Button>
+        {trigger ? (
+          trigger
+        ) : (
+          <Button variant="outline" size="sm">
+            <Edit className="mr-2 h-4 w-4" />
+            Edit Profile
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit Military Profile</DialogTitle>
           <DialogDescription>
-            Update military personnel information.
+            Update the details for {military.name}.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -105,7 +113,7 @@ export const EditMilitaryDialog = ({ military }: EditMilitaryDialogProps) => {
                   <FormItem>
                     <FormLabel>Name</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input placeholder="Full Name" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -118,7 +126,7 @@ export const EditMilitaryDialog = ({ military }: EditMilitaryDialogProps) => {
                   <FormItem>
                     <FormLabel>Rank</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input placeholder="e.g. Captain" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -133,7 +141,7 @@ export const EditMilitaryDialog = ({ military }: EditMilitaryDialogProps) => {
                   <FormItem>
                     <FormLabel>Unit</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input placeholder="e.g. 1st Battalion" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -173,7 +181,7 @@ export const EditMilitaryDialog = ({ military }: EditMilitaryDialogProps) => {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input placeholder="email@example.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -186,7 +194,7 @@ export const EditMilitaryDialog = ({ military }: EditMilitaryDialogProps) => {
                   <FormItem>
                     <FormLabel>Phone</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input placeholder="(00) 00000-0000" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
