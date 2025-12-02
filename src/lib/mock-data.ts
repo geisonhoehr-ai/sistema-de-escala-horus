@@ -27,6 +27,15 @@ export const mockUsers: User[] = [
     avatarUrl: 'https://img.usecurling.com/ppl/medium?gender=male&seed=2',
     associatedScales: ['scale-1'],
   },
+  {
+    id: 'user-admin-horus',
+    name: 'Admin Horus',
+    email: 'admin@horus.com',
+    password: '123456',
+    role: 'Admin',
+    avatarUrl: 'https://img.usecurling.com/ppl/medium?gender=male&seed=99',
+    associatedScales: [],
+  },
 ]
 
 export const mockMilitary: Military[] = [
