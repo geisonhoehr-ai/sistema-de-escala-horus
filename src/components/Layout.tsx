@@ -1,21 +1,17 @@
 import { Outlet } from 'react-router-dom'
-import { Header } from '@/components/Header'
 import { Sidebar } from '@/components/Sidebar'
-import { Footer } from '@/components/Footer'
+import { Header } from '@/components/Header'
 
-export default function Layout() {
+export const Layout = () => {
   return (
-    <div className="relative flex min-h-screen flex-col">
+    <div className="min-h-screen bg-background">
       <Header />
-      <div className="flex-1">
-        <div className="container flex-1 items-start lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10">
-          <Sidebar />
-          <main className="relative py-6 lg:col-start-2">
-            <Outlet />
-          </main>
-        </div>
+      <div className="flex h-screen overflow-hidden pt-14">
+        <Sidebar />
+        <main className="flex-1 overflow-y-auto bg-background p-4 md:ml-64 md:p-8">
+          <Outlet />
+        </main>
       </div>
-      <Footer />
     </div>
   )
 }

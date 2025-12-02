@@ -5,13 +5,12 @@ import {
   Users,
   CalendarDays,
   Shield,
-  Settings,
   Clock,
   Database,
 } from 'lucide-react'
 import useAuthStore from '@/stores/auth.store'
 
-const Sidebar = () => {
+export const Sidebar = () => {
   const location = useLocation()
   const { user } = useAuthStore()
   const isAdmin = user?.role === 'Admin'
@@ -88,5 +87,3 @@ const Sidebar = () => {
     </aside>
   )
 }
-
-export default Sidebar
