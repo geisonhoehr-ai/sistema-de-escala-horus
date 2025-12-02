@@ -1,4 +1,11 @@
-import { Military, Scale, User, Unavailability, Notification } from '@/types'
+import {
+  Military,
+  Scale,
+  User,
+  Unavailability,
+  Notification,
+  UnavailabilityTypeDefinition,
+} from '@/types'
 import { addDays, subDays } from 'date-fns'
 
 export const mockUsers: User[] = [
@@ -68,6 +75,13 @@ export const mockMilitary: Military[] = [
     phone: '(51) 98765-1234',
     associatedScales: ['scale-2'],
   },
+]
+
+export const mockUnavailabilityTypes: UnavailabilityTypeDefinition[] = [
+  { id: 'type-1', name: 'Férias' },
+  { id: 'type-2', name: 'Junta Médica' },
+  { id: 'type-3', name: 'Missão' },
+  { id: 'type-4', name: 'Dispensa' },
 ]
 
 export const mockUnavailabilities: Unavailability[] = [

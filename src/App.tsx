@@ -12,6 +12,7 @@ import MilitaryProfilePage from './pages/military/MilitaryProfilePage'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
 import AdminScalesPage from './pages/admin/AdminScalesPage'
 import AdminPermissionsPage from './pages/admin/AdminPermissionsPage'
+import AdminUnavailabilityTypesPage from './pages/admin/AdminUnavailabilityTypesPage'
 import NotFound from './pages/NotFound'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import useAuthStore from './stores/auth.store'
@@ -50,6 +51,10 @@ const App = () => {
               <Route
                 path="/admin/permissions"
                 element={<AdminPermissionsPage />}
+              />
+              <Route
+                path="/admin/unavailability-types"
+                element={<AdminUnavailabilityTypesPage />}
               />
             </Route>
           </Route>

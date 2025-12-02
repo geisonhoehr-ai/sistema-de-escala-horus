@@ -8,6 +8,7 @@ import {
   User,
   Service,
   DailyReservation,
+  UnavailabilityTypeDefinition,
 } from '@/types'
 import {
   mockMilitary,
@@ -15,6 +16,7 @@ import {
   mockUnavailabilities,
   mockNotifications,
   mockUsers,
+  mockUnavailabilityTypes,
 } from '@/lib/mock-data'
 import { isSameDay } from 'date-fns'
 
@@ -24,6 +26,7 @@ interface DataState {
   unavailabilities: Unavailability[]
   notifications: Notification[]
   users: User[]
+  unavailabilityTypes: UnavailabilityTypeDefinition[]
   activeScaleId: string | null
   setActiveScaleId: (id: string | null) => void
   addScale: (newScale: Omit<Scale, 'id' | 'services' | 'reservations'>) => void
@@ -39,6 +42,13 @@ interface DataState {
     updatedUnavailability: Partial<Unavailability> & { id: string },
   ) => void
   deleteUnavailability: (unavailabilityId: string) => void
+  addUnavailabilityType: (
+    newType: Omit<UnavailabilityTypeDefinition, 'id'>,
+  ) => void
+  updateUnavailabilityType: (
+    updatedType: Partial<UnavailabilityTypeDefinition> & { id: string },
+  ) => void
+  deleteUnavailabilityType: (typeId: string) => void
   updateServicesForDay: (
     scaleId: string,
     date: Date,
@@ -59,6 +69,7 @@ const useDataStore = create<DataState>()(
       unavailabilities: mockUnavailabilities,
       notifications: mockNotifications,
       users: mockUsers,
+      unavailabilityTypes: mockUnavailabilityTypes,
       activeScaleId: mockScales.length > 0 ? mockScales[0].id : null,
       setActiveScaleId: (id) => set({ activeScaleId: id }),
       addScale: (newScale) =>
@@ -131,6 +142,43 @@ const useDataStore = create<DataState>()(
         set((state) => ({
           unavailabilities: state.unavailabilities.filter(
             (u) => u.id !== unavailabilityId,
+          ),
+        })),
+      addUnavailabilityType: (newType) =>
+        set((state) => ({
+          unavailabilityTypes: [
+            ...state.unavailabilityTypes,
+            { ...newType, id: `type-${Date.now()}` },
+          ],
+        })),
+      updateUnavailabilityType: (updatedType) =>
+        set((state) => {
+          const oldType = state.unavailabilityTypes.find(
+            (t) => t.id === updatedType.id,
+          )
+          if (!oldType || !updatedType.name)
+            return {
+              unavailabilityTypes: state.unavailabilityTypes.map((t) =>
+                t.id === updatedType.id ? { ...t, ...updatedType } : t,
+              ),
+            }
+
+          // Update existing records if name changed
+          const updatedUnavailabilities = state.unavailabilities.map((u) =>
+            u.type === oldType.name ? { ...u, type: updatedType.name! } : u,
+          )
+
+          return {
+            unavailabilities: updatedUnavailabilities,
+            unavailabilityTypes: state.unavailabilityTypes.map((t) =>
+              t.id === updatedType.id ? { ...t, ...updatedType } : t,
+            ),
+          }
+        }),
+      deleteUnavailabilityType: (typeId) =>
+        set((state) => ({
+          unavailabilityTypes: state.unavailabilityTypes.filter(
+            (t) => t.id !== typeId,
           ),
         })),
       updateServicesForDay: (scaleId, date, newServicesData) =>

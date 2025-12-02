@@ -20,11 +20,13 @@ export interface Military {
   associatedScales: string[]
 }
 
-export type UnavailabilityType =
-  | 'Junta Médica'
-  | 'Férias'
-  | 'Missão'
-  | 'Dispensa'
+// Changed from union type to string to support dynamic types
+export type UnavailabilityType = string
+
+export interface UnavailabilityTypeDefinition {
+  id: string
+  name: string
+}
 
 export interface Unavailability {
   id: string

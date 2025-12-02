@@ -32,7 +32,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Unavailability, UnavailabilityType } from '@/types'
+import { Unavailability } from '@/types'
 import useDataStore from '@/stores/data.store'
 import { toast } from './ui/use-toast'
 import { CalendarIcon } from 'lucide-react'
@@ -41,7 +41,7 @@ import { cn } from '@/lib/utils'
 
 const unavailabilitySchema = z
   .object({
-    type: z.enum(['Junta Médica', 'Férias', 'Missão', 'Dispensa']),
+    type: z.string().min(1, 'O tipo é obrigatório.'),
     startDate: z.date({ required_error: 'Data de início é obrigatória.' }),
     endDate: z.date({ required_error: 'Data de fim é obrigatória.' }),
     observations: z.string().optional(),
@@ -66,7 +66,8 @@ export const ManageUnavailabilityDialog = ({
   isOpen,
   onOpenChange,
 }: ManageUnavailabilityDialogProps) => {
-  const { addUnavailability, updateUnavailability } = useDataStore()
+  const { addUnavailability, updateUnavailability, unavailabilityTypes } =
+    useDataStore()
   const isEditing = !!unavailability
 
   const form = useForm<UnavailabilityFormValues>({
@@ -125,13 +126,11 @@ export const ManageUnavailabilityDialog = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {['Férias', 'Junta Médica', 'Missão', 'Dispensa'].map(
-                        (type) => (
-                          <SelectItem key={type} value={type}>
-                            {type}
-                          </SelectItem>
-                        ),
-                      )}
+                      {unavailabilityTypes.map((typeDef) => (
+                        <SelectItem key={typeDef.id} value={typeDef.name}>
+                          {typeDef.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />

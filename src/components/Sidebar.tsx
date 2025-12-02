@@ -2,7 +2,15 @@ import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Home, Calendar, Users, Shield, Menu, X } from 'lucide-react'
+import {
+  Home,
+  Calendar,
+  Users,
+  Shield,
+  Menu,
+  X,
+  AlertCircle,
+} from 'lucide-react'
 import { useState } from 'react'
 import useAuthStore from '@/stores/auth.store'
 
@@ -14,6 +22,12 @@ const navItems = [
     href: '/admin/users',
     label: 'Administração',
     icon: Shield,
+    adminOnly: true,
+  },
+  {
+    href: '/admin/unavailability-types',
+    label: 'Tipos de Indisponibilidade',
+    icon: AlertCircle,
     adminOnly: true,
   },
 ]
