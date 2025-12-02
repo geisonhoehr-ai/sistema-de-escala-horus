@@ -1,16 +1,19 @@
-import { useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { useParams, Link } from 'react-router-dom'
+import useDataStore from '@/stores/data.store'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import {
+  Mail,
+  Phone,
+  Shield,
+  CalendarOff,
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Edit,
+} from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -19,9 +22,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Mail, Phone, PlusCircle, Edit, Trash2 } from 'lucide-react'
-import useDataStore from '@/stores/data.store'
-import { Unavailability } from '@/types'
+import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import { useState } from 'react'
 import { ManageUnavailabilityDialog } from '@/components/ManageUnavailabilityDialog'
 import {
   AlertDialog,
@@ -34,32 +37,49 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { Unavailability } from '@/types'
+import { toast } from '@/components/ui/use-toast'
 
 export default function MilitaryProfilePage() {
   const { militaryId } = useParams<{ militaryId: string }>()
-  const { military, unavailabilities, scales, deleteUnavailability } =
+  const { military, scales, unavailabilities, deleteUnavailability } =
     useDataStore()
-  const person = military.find((m) => m.id === militaryId)
-  const personUnavailabilities = unavailabilities.filter(
-    (u) => u.militaryId === militaryId,
-  )
-  const personServices = scales
-    .flatMap((scale) =>
-      scale.services
-        .filter((service) => service.militaryId === militaryId)
-        .map((service) => ({ ...service, scaleName: scale.name })),
-    )
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-
   const [isUnavailabilityDialogOpen, setIsUnavailabilityDialogOpen] =
     useState(false)
   const [editingUnavailability, setEditingUnavailability] = useState<
     Unavailability | undefined
   >(undefined)
 
-  const handleAddUnavailability = () => {
-    setEditingUnavailability(undefined)
-    setIsUnavailabilityDialogOpen(true)
+  const militaryPerson = military.find((m) => m.id === militaryId)
+
+  if (!militaryPerson) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full space-y-4">
+        <h1 className="text-2xl font-bold">Militar não encontrado</h1>
+        <Button asChild>
+          <Link to="/military">Voltar para a lista</Link>
+        </Button>
+      </div>
+    )
+  }
+
+  const personScales = scales.filter((s) =>
+    militaryPerson.associatedScales.includes(s.id),
+  )
+
+  const personUnavailabilities = unavailabilities
+    .filter((u) => u.militaryId === militaryId)
+    .sort(
+      (a, b) =>
+        new Date(b.startDate).getTime() - new Date(a.startDate).getTime(),
+    )
+
+  const handleDeleteUnavailability = (id: string) => {
+    deleteUnavailability(id)
+    toast({
+      title: 'Indisponibilidade removida',
+      description: 'O registro foi excluído com sucesso.',
+    })
   }
 
   const handleEditUnavailability = (unavailability: Unavailability) => {
@@ -67,7 +87,10 @@ export default function MilitaryProfilePage() {
     setIsUnavailabilityDialogOpen(true)
   }
 
-  if (!person) return <div>Militar não encontrado.</div>
+  const handleAddUnavailability = () => {
+    setEditingUnavailability(undefined)
+    setIsUnavailabilityDialogOpen(true)
+  }
 
   const getInitials = (name: string) =>
     name
@@ -78,144 +101,169 @@ export default function MilitaryProfilePage() {
 
   return (
     <div className="space-y-6 animate-fade-in-up">
-      <div className="flex items-center gap-6">
-        <Avatar className="h-24 w-24">
-          <AvatarImage src={person.avatarUrl} alt={person.name} />
-          <AvatarFallback className="text-3xl">
-            {getInitials(person.name)}
-          </AvatarFallback>
-        </Avatar>
-        <div>
-          <h1 className="text-3xl font-bold">{person.name}</h1>
-          <p className="text-xl text-muted-foreground">{person.rank}</p>
-          <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <Mail className="h-4 w-4" /> {person.email}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Phone className="h-4 w-4" /> {person.phone}
-            </span>
-          </div>
-        </div>
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" asChild>
+          <Link to="/military">
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+        </Button>
+        <h1 className="text-3xl font-bold">Perfil do Militar</h1>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card className="md:col-span-1">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <Avatar className="h-32 w-32 border-4 border-background shadow-lg">
+                <AvatarImage
+                  src={militaryPerson.avatarUrl}
+                  alt={militaryPerson.name}
+                />
+                <AvatarFallback className="text-2xl">
+                  {getInitials(militaryPerson.name)}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+            <CardTitle>{militaryPerson.name}</CardTitle>
+            <Badge variant="secondary" className="mt-2 w-fit mx-auto">
+              {militaryPerson.rank}
+            </Badge>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Mail className="h-4 w-4" />
+                <span>{militaryPerson.email}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Phone className="h-4 w-4" />
+                <span>{militaryPerson.phone}</span>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t">
+              <h3 className="font-semibold mb-2 flex items-center gap-2">
+                <Shield className="h-4 w-4" /> Escalas Associadas
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {personScales.length > 0 ? (
+                  personScales.map((scale) => (
+                    <Badge key={scale.id} variant="outline">
+                      {scale.name}
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-sm text-muted-foreground">
+                    Nenhuma escala associada.
+                  </span>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Indisponibilidades</CardTitle>
-            <Button size="sm" onClick={handleAddUnavailability}>
-              <PlusCircle className="mr-2 h-4 w-4" /> Adicionar
+            <CardTitle className="flex items-center gap-2">
+              <CalendarOff className="h-5 w-5" />
+              Indisponibilidades e Missões
+            </CardTitle>
+            <Button onClick={handleAddUnavailability} size="sm">
+              <Plus className="mr-2 h-4 w-4" />
+              Adicionar
             </Button>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Início</TableHead>
-                  <TableHead>Fim</TableHead>
-                  <TableHead className="w-12"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {personUnavailabilities.map((u) => (
-                  <TableRow key={u.id}>
-                    <TableCell>{u.type}</TableCell>
-                    <TableCell>
-                      {format(new Date(u.startDate), 'dd/MM/yyyy')}
-                    </TableCell>
-                    <TableCell>
-                      {format(new Date(u.endDate), 'dd/MM/yyyy')}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => handleEditUnavailability(u)}
+            {personUnavailabilities.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Período</TableHead>
+                    <TableHead>Observações</TableHead>
+                    <TableHead className="w-[100px]">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {personUnavailabilities.map((u) => (
+                    <TableRow key={u.id}>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            u.type === 'Missão' ? 'default' : 'secondary'
+                          }
                         >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-red-500"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Esta ação não pode ser desfeita.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => deleteUnavailability(u.id)}
+                          {u.type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {format(new Date(u.startDate), 'dd/MM/yy')} até{' '}
+                        {format(new Date(u.endDate), 'dd/MM/yy')}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
+                        {u.observations || '-'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditUnavailability(u)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-red-500 hover:text-red-600 hover:bg-red-50"
                               >
-                                Excluir
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Histórico de Serviços</CardTitle>
-            <CardDescription>
-              Lista dos últimos serviços tirados pelo militar.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Turno</TableHead>
-                  <TableHead>Escala</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {personServices.slice(0, 10).map((service, index) => (
-                  <TableRow key={index}>
-                    <TableCell>
-                      {format(new Date(service.date), "dd 'de' MMMM, yyyy", {
-                        locale: ptBR,
-                      })}
-                    </TableCell>
-                    <TableCell>
-                      {service.startTime && service.endTime
-                        ? `${service.startTime} - ${service.endTime}`
-                        : 'Integral'}
-                    </TableCell>
-                    <TableCell>{service.scaleName}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  Excluir indisponibilidade?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta ação não pode ser desfeita.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() =>
+                                    handleDeleteUnavailability(u.id)
+                                  }
+                                >
+                                  Excluir
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                Nenhuma indisponibilidade registrada.
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
+
       {isUnavailabilityDialogOpen && (
         <ManageUnavailabilityDialog
+          militaryId={militaryId!}
+          unavailability={editingUnavailability}
           isOpen={isUnavailabilityDialogOpen}
           onOpenChange={setIsUnavailabilityDialogOpen}
-          militaryId={person.id}
-          unavailability={editingUnavailability}
         />
       )}
     </div>

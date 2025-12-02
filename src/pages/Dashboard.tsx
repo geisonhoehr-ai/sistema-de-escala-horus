@@ -22,6 +22,7 @@ import { Calendar, Clock, ShieldAlert, ShieldCheck } from 'lucide-react'
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { MissionsOverview } from '@/components/MissionsOverview'
 
 export default function DashboardPage() {
   const { user } = useAuthStore()
@@ -63,6 +64,9 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8 animate-fade-in-up">
       <h1 className="text-3xl font-bold">Dashboard</h1>
+
+      {/* Missions Overview Section */}
+      <MissionsOverview />
 
       <section>
         <h2 className="text-2xl font-semibold mb-4">Escalas Ativas</h2>

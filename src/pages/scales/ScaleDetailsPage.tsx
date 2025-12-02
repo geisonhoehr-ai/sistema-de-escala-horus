@@ -104,7 +104,7 @@ export default function ScaleDetailsPage() {
       .toUpperCase()
 
   const isUnavailable = (militaryId: string, date: Date) => {
-    return unavailabilities.some(
+    return unavailabilities.find(
       (u) =>
         u.militaryId === militaryId && date >= u.startDate && date <= u.endDate,
     )
@@ -290,7 +290,16 @@ export default function ScaleDetailsPage() {
                                 </span>
                               </div>
                               {isUnav && (
-                                <Info className="h-3 w-3 text-yellow-500 ml-auto shrink-0" />
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <Info className="h-3 w-3 text-red-500 ml-auto shrink-0" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Indisponível: {isUnav.type}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
                               )}
                             </div>
                           )
@@ -394,11 +403,20 @@ export default function ScaleDetailsPage() {
                           <SelectContent>
                             {scale.associatedMilitaryIds.map((id) => {
                               const m = getMilitaryById(id)
-                              return m ? (
-                                <SelectItem key={m.id} value={m.id}>
-                                  {m.name}
+                              if (!m) return null
+                              const unav =
+                                selectedDay && isUnavailable(m.id, selectedDay)
+                              return (
+                                <SelectItem
+                                  key={m.id}
+                                  value={m.id}
+                                  disabled={!!unav}
+                                  className="flex justify-between"
+                                >
+                                  {m.name}{' '}
+                                  {unav ? `(Indisponível: ${unav.type})` : ''}
                                 </SelectItem>
-                              ) : null
+                              )
                             })}
                           </SelectContent>
                         </Select>
@@ -509,11 +527,15 @@ export default function ScaleDetailsPage() {
                       .filter((id) => !reservationMilitaryIds.includes(id))
                       .map((id) => {
                         const m = getMilitaryById(id)
-                        return m ? (
-                          <SelectItem key={m.id} value={m.id}>
+                        if (!m) return null
+                        const unav =
+                          selectedDay && isUnavailable(m.id, selectedDay)
+                        return (
+                          <SelectItem key={m.id} value={m.id} disabled={!!unav}>
                             {m.name}
+                            {unav ? ` (Indisponível: ${unav.type})` : ''}
                           </SelectItem>
-                        ) : null
+                        )
                       })}
                   </SelectContent>
                 </Select>
