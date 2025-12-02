@@ -90,16 +90,17 @@ const useDataStore = create<DataState>((set, get) => ({
   initialize: async () => {
     set({ isLoading: true })
     try {
+      console.log('Initializing data store...')
       const [
-        { data: militaryData },
-        { data: scalesData },
-        { data: servicesData },
-        { data: reservationsData },
-        { data: unavailabilitiesData },
-        { data: typesData },
-        { data: profilesData },
-        { data: notificationsData },
-        { data: configurationsData },
+        { data: militaryData, error: militaryError },
+        { data: scalesData, error: scalesError },
+        { data: servicesData, error: servicesError },
+        { data: reservationsData, error: reservationsError },
+        { data: unavailabilitiesData, error: unavailabilitiesError },
+        { data: typesData, error: typesError },
+        { data: profilesData, error: profilesError },
+        { data: notificationsData, error: notificationsError },
+        { data: configurationsData, error: configurationsError },
       ] = await Promise.all([
         supabase.from('military').select('*'),
         supabase.from('scales').select('*'),
@@ -114,6 +115,17 @@ const useDataStore = create<DataState>((set, get) => ({
           .order('created_at', { ascending: false }),
         supabase.from('configurations').select('*'),
       ])
+
+      // Log any errors
+      if (militaryError) console.error('Military error:', militaryError)
+      if (scalesError) console.error('Scales error:', scalesError)
+      if (servicesError) console.error('Services error:', servicesError)
+      if (reservationsError) console.error('Reservations error:', reservationsError)
+      if (unavailabilitiesError) console.error('Unavailabilities error:', unavailabilitiesError)
+      if (typesError) console.error('Types error:', typesError)
+      if (profilesError) console.error('Profiles error:', profilesError)
+      if (notificationsError) console.error('Notifications error:', notificationsError)
+      if (configurationsError) console.error('Configurations error:', configurationsError)
 
       const processedMilitary: Military[] = (militaryData || []).map((m) => ({
         id: m.id,
@@ -208,6 +220,15 @@ const useDataStore = create<DataState>((set, get) => ({
         activeScaleId:
           processedScales.length > 0 ? processedScales[0].id : null,
         isLoading: false,
+      })
+
+      console.log('Data store initialized successfully:', {
+        military: processedMilitary.length,
+        scales: processedScales.length,
+        unavailabilities: processedUnavailabilities.length,
+        users: processedUsers.length,
+        types: processedTypes.length,
+        configs: processedConfigurations.length
       })
     } catch (error) {
       console.error('Error initializing data store:', error)
