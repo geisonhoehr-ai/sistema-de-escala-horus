@@ -185,6 +185,7 @@ export default function MilitaryProfilePage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Data</TableHead>
+                  <TableHead>Turno</TableHead>
                   <TableHead>Escala</TableHead>
                 </TableRow>
               </TableHeader>
@@ -195,6 +196,11 @@ export default function MilitaryProfilePage() {
                       {format(new Date(service.date), "dd 'de' MMMM, yyyy", {
                         locale: ptBR,
                       })}
+                    </TableCell>
+                    <TableCell>
+                      {service.startTime && service.endTime
+                        ? `${service.startTime} - ${service.endTime}`
+                        : 'Integral'}
                     </TableCell>
                     <TableCell>{service.scaleName}</TableCell>
                   </TableRow>

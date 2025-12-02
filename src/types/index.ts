@@ -36,8 +36,11 @@ export interface Unavailability {
 }
 
 export interface Service {
+  id: string
   date: Date
   militaryId: string
+  startTime?: string
+  endTime?: string
   observations?: string
 }
 

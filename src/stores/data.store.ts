@@ -39,11 +39,10 @@ interface DataState {
     updatedUnavailability: Partial<Unavailability> & { id: string },
   ) => void
   deleteUnavailability: (unavailabilityId: string) => void
-  updateServiceForDay: (
+  updateServicesForDay: (
     scaleId: string,
     date: Date,
-    militaryId: string | null,
-    observations?: string,
+    services: Omit<Service, 'id' | 'date'>[],
   ) => void
   updateReservationForDay: (
     scaleId: string,
@@ -134,29 +133,27 @@ const useDataStore = create<DataState>()(
             (u) => u.id !== unavailabilityId,
           ),
         })),
-      updateServiceForDay: (scaleId, date, militaryId, observations) =>
+      updateServicesForDay: (scaleId, date, newServicesData) =>
         set((state) => ({
           scales: state.scales.map((scale) => {
             if (scale.id !== scaleId) return scale
-            let serviceFound = false
-            const updatedServices = scale.services
-              .map((service) => {
-                if (isSameDay(service.date, date)) {
-                  serviceFound = true
-                  if (militaryId) {
-                    return { ...service, militaryId, observations }
-                  }
-                  return null // Remove service if militaryId is null
-                }
-                return service
-              })
-              .filter(Boolean) as Service[]
 
-            if (!serviceFound && militaryId) {
-              updatedServices.push({ date, militaryId, observations })
+            // Remove existing services for this day
+            const otherServices = scale.services.filter(
+              (service) => !isSameDay(service.date, date),
+            )
+
+            // Create new service objects
+            const newServices: Service[] = newServicesData.map((s) => ({
+              ...s,
+              id: `svc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              date,
+            }))
+
+            return {
+              ...scale,
+              services: [...otherServices, ...newServices],
             }
-
-            return { ...scale, services: updatedServices }
           }),
         })),
       updateReservationForDay: (scaleId, date, militaryIds) =>

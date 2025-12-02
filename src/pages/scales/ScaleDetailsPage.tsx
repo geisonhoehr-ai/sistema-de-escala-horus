@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import {
   format,
@@ -18,6 +18,8 @@ import {
   Info,
   Sparkles,
   Trash2,
+  Plus,
+  Clock,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import useDataStore from '@/stores/data.store'
@@ -45,8 +47,17 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/use-toast'
+import { ScrollArea } from '@/components/ui/scroll-area'
+
+interface AssignmentState {
+  id?: string
+  militaryId: string
+  startTime: string
+  endTime: string
+  observations: string
+}
 
 export default function ScaleDetailsPage() {
   const { scaleId } = useParams<{ scaleId: string }>()
@@ -54,7 +65,7 @@ export default function ScaleDetailsPage() {
     scales,
     military,
     unavailabilities,
-    updateServiceForDay,
+    updateServicesForDay,
     updateReservationForDay,
   } = useDataStore()
   const scale = scales.find((s) => s.id === scaleId)
@@ -62,10 +73,10 @@ export default function ScaleDetailsPage() {
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
   const [isDayDialogOpen, setIsDayDialogOpen] = useState(false)
 
-  const [serviceMilitaryId, setServiceMilitaryId] = useState<string | null>(
-    null,
-  )
-  const [serviceObservations, setServiceObservations] = useState('')
+  // Local state for editing services/reservations
+  const [currentAssignments, setCurrentAssignments] = useState<
+    AssignmentState[]
+  >([])
   const [reservationMilitaryIds, setReservationMilitaryIds] = useState<
     string[]
   >([])
@@ -102,7 +113,7 @@ export default function ScaleDetailsPage() {
   const getDayColor = (date: Date) => {
     const day = date.getDate()
     const month = date.getMonth()
-    // Month is 0-indexed (0 = Jan, 11 = Dec)
+    // Month is 0-indexed
     if ((month === 11 && day === 25) || (month === 0 && day === 1))
       return 'text-special'
     if (isWeekend(date)) return 'text-destructive'
@@ -111,25 +122,65 @@ export default function ScaleDetailsPage() {
 
   const handleDayClick = (day: Date) => {
     setSelectedDay(day)
-    const service = scale.services.find((s) => isSameDay(s.date, day))
+    const services = scale.services.filter((s) => isSameDay(s.date, day))
     const reservation = scale.reservations.find((r) => isSameDay(r.date, day))
-    setServiceMilitaryId(service?.militaryId || null)
-    setServiceObservations(service?.observations || '')
+
+    const assignments = services.map((s) => ({
+      id: s.id,
+      militaryId: s.militaryId,
+      startTime: s.startTime || '08:00',
+      endTime: s.endTime || '08:00',
+      observations: s.observations || '',
+    }))
+
+    setCurrentAssignments(assignments)
     setReservationMilitaryIds(reservation?.militaryIds || [])
     setIsDayDialogOpen(true)
   }
 
   const handleSaveChanges = () => {
     if (!selectedDay) return
-    updateServiceForDay(
-      scale.id,
-      selectedDay,
-      serviceMilitaryId,
-      serviceObservations,
-    )
+
+    const servicesToSave = currentAssignments.map((a) => ({
+      militaryId: a.militaryId,
+      startTime: a.startTime,
+      endTime: a.endTime,
+      observations: a.observations,
+    }))
+
+    updateServicesForDay(scale.id, selectedDay, servicesToSave)
     updateReservationForDay(scale.id, selectedDay, reservationMilitaryIds)
-    toast({ title: 'Serviço atualizado com sucesso!' })
+
+    toast({ title: 'Escala do dia atualizada com sucesso!' })
     setIsDayDialogOpen(false)
+  }
+
+  const addAssignment = () => {
+    setCurrentAssignments([
+      ...currentAssignments,
+      {
+        militaryId: '',
+        startTime: '08:00',
+        endTime: '20:00',
+        observations: '',
+      },
+    ])
+  }
+
+  const removeAssignment = (index: number) => {
+    const newAssignments = [...currentAssignments]
+    newAssignments.splice(index, 1)
+    setCurrentAssignments(newAssignments)
+  }
+
+  const updateAssignment = (
+    index: number,
+    field: keyof AssignmentState,
+    value: string,
+  ) => {
+    const newAssignments = [...currentAssignments]
+    newAssignments[index] = { ...newAssignments[index], [field]: value }
+    setCurrentAssignments(newAssignments)
   }
 
   return (
@@ -183,79 +234,68 @@ export default function ScaleDetailsPage() {
                 {Array.from({ length: startingDayOfWeek }).map((_, i) => (
                   <div
                     key={`empty-${i}`}
-                    className="border-r border-b h-32 bg-muted/50"
+                    className="border-r border-b h-36 bg-muted/50"
                   />
                 ))}
                 {daysInMonth.map((day) => {
-                  const service = scale.services.find((s) =>
+                  const dayServices = scale.services.filter((s) =>
                     isSameDay(new Date(s.date), day),
                   )
-                  const militaryOnService = service
-                    ? getMilitaryById(service.militaryId)
-                    : null
                   const reservation = scale.reservations.find((r) =>
                     isSameDay(new Date(r.date), day),
                   )
-                  const isUnav = militaryOnService
-                    ? isUnavailable(militaryOnService.id, day)
-                    : false
 
                   return (
                     <div
                       key={day.toString()}
                       onClick={() => handleDayClick(day)}
                       className={cn(
-                        'border-r border-b p-2 h-32 flex flex-col cursor-pointer hover:bg-accent transition-colors group',
+                        'border-r border-b p-2 h-36 flex flex-col cursor-pointer hover:bg-accent transition-colors group relative overflow-hidden',
                         !isSameMonth(day, currentDate) && 'bg-muted/50',
                       )}
                     >
-                      <span
-                        className={cn('font-bold self-end', getDayColor(day))}
-                      >
-                        {format(day, 'd')}
-                      </span>
-                      {militaryOnService && (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="flex flex-col items-center justify-center flex-grow text-center w-full">
-                                <Avatar className="h-8 w-8 mb-1">
-                                  <AvatarImage
-                                    src={militaryOnService.avatarUrl}
-                                  />
-                                  <AvatarFallback>
-                                    {getInitials(militaryOnService.name)}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <p className="text-xs font-medium truncate w-full px-1">
-                                  {militaryOnService.name}
-                                </p>
-                                <div className="flex gap-1 mt-1">
-                                  {reservation && (
-                                    <Users className="h-3 w-3 text-blue-500" />
-                                  )}
-                                  {isUnav && (
-                                    <Info className="h-3 w-3 text-yellow-500" />
-                                  )}
-                                </div>
+                      <div className="flex justify-between items-start mb-1">
+                        <span className={cn('font-bold', getDayColor(day))}>
+                          {format(day, 'd')}
+                        </span>
+                        <div className="flex gap-1">
+                          {reservation && (
+                            <Users className="h-3 w-3 text-blue-500" />
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex-grow overflow-y-auto space-y-1 scrollbar-thin scrollbar-thumb-gray-300">
+                        {dayServices.map((service, idx) => {
+                          const m = getMilitaryById(service.militaryId)
+                          if (!m) return null
+                          const isUnav = isUnavailable(m.id, day)
+                          return (
+                            <div
+                              key={idx}
+                              className="flex items-center gap-1.5 bg-background/80 p-1 rounded border text-xs"
+                            >
+                              <Avatar className="h-5 w-5">
+                                <AvatarImage src={m.avatarUrl} />
+                                <AvatarFallback className="text-[8px]">
+                                  {getInitials(m.name)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex flex-col min-w-0">
+                                <span className="truncate font-medium leading-tight">
+                                  {m.name}
+                                </span>
+                                <span className="text-[9px] text-muted-foreground leading-tight">
+                                  {service.startTime} - {service.endTime}
+                                </span>
                               </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              {isUnav && <p>Militar indisponível!</p>}
-                              {reservation && (
-                                <p>
-                                  {reservation.militaryIds.length} na reserva.
-                                </p>
+                              {isUnav && (
+                                <Info className="h-3 w-3 text-yellow-500 ml-auto shrink-0" />
                               )}
-                              {service.observations && (
-                                <p className="max-w-xs">
-                                  Obs: {service.observations}
-                                </p>
-                              )}
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )}
+                            </div>
+                          )
+                        })}
+                      </div>
                     </div>
                   )
                 })}
@@ -266,89 +306,178 @@ export default function ScaleDetailsPage() {
         <div className="lg:col-span-1">
           <Card>
             <CardHeader>
-              <CardTitle>Contagem de "Quadrinhos"</CardTitle>
+              <CardTitle>Contagem de Serviços</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {scale.associatedMilitaryIds.map((id) => {
-                  const m = getMilitaryById(id)
-                  if (!m) return null
-                  const serviceCount = scale.services.filter(
-                    (s) =>
-                      s.militaryId === id &&
-                      isSameMonth(new Date(s.date), currentDate),
-                  ).length
-                  return (
-                    <div key={id} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={m.avatarUrl} />
-                          <AvatarFallback>{getInitials(m.name)}</AvatarFallback>
-                        </Avatar>
-                        <span>{m.name}</span>
+              <ScrollArea className="h-[500px]">
+                <div className="space-y-3 pr-4">
+                  {scale.associatedMilitaryIds.map((id) => {
+                    const m = getMilitaryById(id)
+                    if (!m) return null
+                    const serviceCount = scale.services.filter(
+                      (s) =>
+                        s.militaryId === id &&
+                        isSameMonth(new Date(s.date), currentDate),
+                    ).length
+                    return (
+                      <div
+                        key={id}
+                        className="flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={m.avatarUrl} />
+                            <AvatarFallback>
+                              {getInitials(m.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm">{m.name}</span>
+                        </div>
+                        <span className="font-bold text-sm bg-secondary px-2 py-1 rounded-md min-w-[2rem] text-center">
+                          {serviceCount}
+                        </span>
                       </div>
-                      <span className="font-bold text-lg">{serviceCount}</span>
-                    </div>
-                  )
-                })}
-              </div>
+                    )
+                  })}
+                </div>
+              </ScrollArea>
             </CardContent>
           </Card>
         </div>
       </div>
+
       <Dialog open={isDayDialogOpen} onOpenChange={setIsDayDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              Editar Serviço -{' '}
+              Editar Escala -{' '}
               {selectedDay &&
                 format(selectedDay, "dd 'de' MMMM 'de' yyyy", {
                   locale: ptBR,
                 })}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <Label>Serviço Principal</Label>
-              <Select
-                value={serviceMilitaryId || ''}
-                onValueChange={(value) => setServiceMilitaryId(value || null)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um militar" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nenhum</SelectItem>
-                  {scale.associatedMilitaryIds.map((id) => {
-                    const m = getMilitaryById(id)
-                    return m ? (
-                      <SelectItem key={m.id} value={m.id}>
-                        {m.name}
-                      </SelectItem>
-                    ) : null
-                  })}
-                </SelectContent>
-              </Select>
+
+          <div className="space-y-6 py-4">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-semibold">
+                  Militares Escalados
+                </Label>
+                <Button size="sm" onClick={addAssignment} variant="secondary">
+                  <Plus className="mr-2 h-4 w-4" /> Adicionar Militar
+                </Button>
+              </div>
+
+              {currentAssignments.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg">
+                  Nenhum militar escalado para este dia.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {currentAssignments.map((assignment, index) => (
+                    <div
+                      key={index}
+                      className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end border p-4 rounded-lg bg-card"
+                    >
+                      <div className="md:col-span-4 space-y-2">
+                        <Label>Militar</Label>
+                        <Select
+                          value={assignment.militaryId}
+                          onValueChange={(value) =>
+                            updateAssignment(index, 'militaryId', value)
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {scale.associatedMilitaryIds.map((id) => {
+                              const m = getMilitaryById(id)
+                              return m ? (
+                                <SelectItem key={m.id} value={m.id}>
+                                  {m.name}
+                                </SelectItem>
+                              ) : null
+                            })}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="md:col-span-2 space-y-2">
+                        <Label className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" /> Início
+                        </Label>
+                        <Input
+                          type="time"
+                          value={assignment.startTime}
+                          onChange={(e) =>
+                            updateAssignment(index, 'startTime', e.target.value)
+                          }
+                        />
+                      </div>
+
+                      <div className="md:col-span-2 space-y-2">
+                        <Label className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" /> Fim
+                        </Label>
+                        <Input
+                          type="time"
+                          value={assignment.endTime}
+                          onChange={(e) =>
+                            updateAssignment(index, 'endTime', e.target.value)
+                          }
+                        />
+                      </div>
+
+                      <div className="md:col-span-3 space-y-2">
+                        <Label>Observação (Opcional)</Label>
+                        <Input
+                          placeholder="Obs..."
+                          value={assignment.observations}
+                          onChange={(e) =>
+                            updateAssignment(
+                              index,
+                              'observations',
+                              e.target.value,
+                            )
+                          }
+                        />
+                      </div>
+
+                      <div className="md:col-span-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-red-500 hover:text-red-600 hover:bg-red-50 w-full"
+                          onClick={() => removeAssignment(index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <div>
-              <Label>Observações</Label>
-              <Textarea
-                placeholder="Observações do dia."
-                value={serviceObservations}
-                onChange={(e) => setServiceObservations(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label>Reservas do Dia</Label>
-              <div className="space-y-2 mt-2">
+
+            <div className="space-y-3 pt-4 border-t">
+              <Label className="text-base font-semibold">Reserva</Label>
+              <div className="space-y-2">
                 {reservationMilitaryIds.map((id) => {
                   const m = getMilitaryById(id)
                   return (
                     <div
                       key={id}
-                      className="flex items-center justify-between bg-secondary p-2 rounded-md"
+                      className="flex items-center justify-between bg-secondary/50 p-2 rounded-md"
                     >
-                      <span>{m?.name}</span>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={m?.avatarUrl} />
+                          <AvatarFallback>{m?.name[0]}</AvatarFallback>
+                        </Avatar>
+                        <span>{m?.name}</span>
+                      </div>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -373,7 +502,7 @@ export default function ScaleDetailsPage() {
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Adicionar militar à reserva" />
+                    <SelectValue placeholder="Adicionar à reserva" />
                   </SelectTrigger>
                   <SelectContent>
                     {scale.associatedMilitaryIds
@@ -391,6 +520,7 @@ export default function ScaleDetailsPage() {
               </div>
             </div>
           </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDayDialogOpen(false)}>
               Cancelar

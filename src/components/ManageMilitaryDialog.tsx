@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -25,13 +25,15 @@ import useDataStore from '@/stores/data.store'
 import { toast } from './ui/use-toast'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Upload } from 'lucide-react'
 
 const militarySchema = z.object({
   name: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
   rank: z.string().min(2, 'O posto/graduação é obrigatório.'),
   email: z.string().email('Email inválido.'),
   phone: z.string().optional(),
-  avatarUrl: z.string().url('URL da imagem inválida.').optional(),
+  avatarUrl: z.string().optional(),
   associatedScales: z.array(z.string()),
 })
 
@@ -50,6 +52,7 @@ export const ManageMilitaryDialog = ({
 }: ManageMilitaryDialogProps) => {
   const { addMilitary, updateMilitary, scales } = useDataStore()
   const isEditing = !!militaryPerson
+  const [previewUrl, setPreviewUrl] = useState<string>('')
 
   const form = useForm<MilitaryFormValues>({
     resolver: zodResolver(militarySchema),
@@ -73,22 +76,36 @@ export const ManageMilitaryDialog = ({
         avatarUrl: militaryPerson.avatarUrl,
         associatedScales: militaryPerson.associatedScales,
       })
+      setPreviewUrl(militaryPerson.avatarUrl)
     } else {
+      const defaultAvatar = `https://img.usecurling.com/ppl/medium?gender=male&seed=${Date.now()}`
       form.reset({
         name: '',
         rank: '',
         email: '',
         phone: '',
-        avatarUrl: `https://img.usecurling.com/ppl/medium?gender=male&seed=${Date.now()}`,
+        avatarUrl: defaultAvatar,
         associatedScales: [],
       })
+      setPreviewUrl(defaultAvatar)
     }
   }, [militaryPerson, form, isOpen])
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const result = reader.result as string
+        setPreviewUrl(result)
+        form.setValue('avatarUrl', result)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
   const onSubmit = (data: MilitaryFormValues) => {
-    const finalAvatarUrl =
-      data.avatarUrl ||
-      `https://img.usecurling.com/ppl/medium?gender=male&seed=${Date.now()}`
+    const finalAvatarUrl = previewUrl || data.avatarUrl || ''
 
     if (isEditing && militaryPerson) {
       updateMilitary({
@@ -128,6 +145,30 @@ export const ManageMilitaryDialog = ({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="flex flex-col items-center justify-center space-y-3">
+              <Avatar className="h-24 w-24 border-2 border-muted">
+                <AvatarImage src={previewUrl} objectFit="cover" />
+                <AvatarFallback>Foto</AvatarFallback>
+              </Avatar>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="relative"
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Carregar Foto
+                  <Input
+                    type="file"
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
+                </Button>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -187,19 +228,7 @@ export const ManageMilitaryDialog = ({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="avatarUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>URL da Foto</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+
             <FormField
               control={form.control}
               name="associatedScales"
