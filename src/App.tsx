@@ -18,15 +18,22 @@ import AdminUnavailabilityTypesPage from './pages/admin/AdminUnavailabilityTypes
 import NotFound from './pages/NotFound'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import useAuthStore from './stores/auth.store'
+import useDataStore from './stores/data.store'
 
 const App = () => {
-  const { isAuthenticated, initialize, isLoading } = useAuthStore()
+  const {
+    isAuthenticated,
+    initialize: initAuth,
+    isLoading: authLoading,
+  } = useAuthStore()
+  const { initialize: initData, isLoading: dataLoading } = useDataStore()
 
   useEffect(() => {
-    initialize()
-  }, [initialize])
+    initAuth()
+    initData()
+  }, [initAuth, initData])
 
-  if (isLoading) {
+  if (authLoading || dataLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
