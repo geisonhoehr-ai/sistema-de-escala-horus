@@ -3,191 +3,111 @@ import {
   Scale,
   User,
   Unavailability,
-  Notification,
   UnavailabilityTypeDefinition,
+  Notification,
+  Configuration,
 } from '@/types'
-import { addDays, subDays } from 'date-fns'
 
-export const mockUsers: User[] = [
+export const mockUnavailabilityTypes: UnavailabilityTypeDefinition[] = [
+  { id: 'type-1', name: 'Férias', description: 'Férias regulamentares' },
   {
-    id: 'user-1',
-    name: 'Admin Sargento Silva',
-    email: 'admin@escala.mil',
-    password: 'admin',
-    role: 'Admin',
-    avatarUrl: 'https://img.usecurling.com/ppl/medium?gender=male&seed=1',
-    associatedScales: ['scale-1', 'scale-2'],
+    id: 'type-2',
+    name: 'Dispensa Médica',
+    description: 'Afastamento por motivo de saúde',
   },
-  {
-    id: 'user-2',
-    name: 'Cabo João',
-    email: 'joao@escala.mil',
-    password: 'user123',
-    role: 'Militar',
-    avatarUrl: 'https://img.usecurling.com/ppl/medium?gender=male&seed=2',
-    associatedScales: ['scale-1'],
-  },
-  {
-    id: 'user-admin-horus',
-    name: 'Admin Horus',
-    email: 'admin@horus.com',
-    password: '123456',
-    role: 'Admin',
-    avatarUrl: 'https://img.usecurling.com/ppl/medium?gender=male&seed=99',
-    associatedScales: [],
-  },
+  { id: 'type-3', name: 'Missão', description: 'Em missão oficial' },
 ]
 
 export const mockMilitary: Military[] = [
   {
-    id: 'mil-1',
-    name: 'Sargento Silva',
-    rank: 'Sargento',
+    id: '1',
+    name: 'Carlos Silva',
+    rank: 'Capitão',
+    unit: '1º Batalhão',
+    status: 'Active',
+    email: 'carlos.silva@exemplo.com',
+    phone: '(11) 99999-1111',
+    associatedScales: ['scale-1'],
     avatarUrl: 'https://img.usecurling.com/ppl/medium?gender=male&seed=1',
-    email: 'silva@escala.mil',
-    phone: '(11) 98765-4321',
-    associatedScales: ['scale-1', 'scale-2'],
   },
   {
-    id: 'mil-2',
-    name: 'Cabo João',
-    rank: 'Cabo',
-    avatarUrl: 'https://img.usecurling.com/ppl/medium?gender=male&seed=2',
-    email: 'joao@escala.mil',
-    phone: '(21) 91234-5678',
-    associatedScales: ['scale-1'],
-  },
-  {
-    id: 'mil-3',
-    name: 'Soldado Ana',
-    rank: 'Soldado',
-    avatarUrl: 'https://img.usecurling.com/ppl/medium?gender=female&seed=3',
-    email: 'ana@escala.mil',
-    phone: '(31) 95678-1234',
-    associatedScales: ['scale-1'],
-  },
-  {
-    id: 'mil-4',
-    name: 'Tenente Costa',
+    id: '2',
+    name: 'Ana Souza',
     rank: 'Tenente',
-    avatarUrl: 'https://img.usecurling.com/ppl/medium?gender=male&seed=4',
-    email: 'costa@escala.mil',
-    phone: '(41) 94321-8765',
-    associatedScales: ['scale-2'],
+    unit: 'Comando Geral',
+    status: 'Active',
+    email: 'ana.souza@exemplo.com',
+    phone: '(11) 99999-2222',
+    associatedScales: ['scale-1'],
+    avatarUrl: 'https://img.usecurling.com/ppl/medium?gender=female&seed=2',
   },
   {
-    id: 'mil-5',
-    name: 'Major Pereira',
-    rank: 'Major',
-    avatarUrl: 'https://img.usecurling.com/ppl/medium?gender=female&seed=5',
-    email: 'pereira@escala.mil',
-    phone: '(51) 98765-1234',
-    associatedScales: ['scale-2'],
+    id: '3',
+    name: 'Pedro Oliveira',
+    rank: 'Sargento',
+    unit: 'Logística',
+    status: 'Active',
+    email: 'pedro.oliveira@exemplo.com',
+    phone: '(11) 99999-3333',
+    associatedScales: ['scale-1'],
+    avatarUrl: 'https://img.usecurling.com/ppl/medium?gender=male&seed=3',
   },
 ]
 
-export const mockUnavailabilityTypes: UnavailabilityTypeDefinition[] = [
-  { id: 'type-1', name: 'Férias' },
-  { id: 'type-2', name: 'Junta Médica' },
-  { id: 'type-3', name: 'Missão' },
-  { id: 'type-4', name: 'Dispensa' },
+export const mockScales: Scale[] = [
+  {
+    id: 'scale-1',
+    name: 'Escala Oficial de Dia',
+    description: 'Escala diária para oficiais de dia ao regimento.',
+    associatedMilitaryIds: ['1', '2', '3'],
+    services: [],
+    reservations: [],
+  },
 ]
 
 export const mockUnavailabilities: Unavailability[] = [
   {
-    id: 'unav-1',
-    militaryId: 'mil-3',
-    type: 'Férias',
-    startDate: new Date(),
-    endDate: addDays(new Date(), 15),
-    observations: 'Férias anuais regulamentares.',
-  },
-  {
-    id: 'unav-2',
-    militaryId: 'mil-2',
-    type: 'Junta Médica',
-    startDate: subDays(new Date(), 5),
-    endDate: addDays(new Date(), 5),
-  },
-]
-
-const today = new Date()
-export const mockScales: Scale[] = [
-  {
-    id: 'scale-1',
-    name: 'Escala de Guarda',
-    description: 'Escala de guarda do quartel.',
-    associatedMilitaryIds: ['mil-1', 'mil-2', 'mil-3'],
-    services: [
-      {
-        id: 'svc-1',
-        date: addDays(today, 1),
-        militaryId: 'mil-1',
-        startTime: '08:00',
-        endTime: '20:00',
-      },
-      {
-        id: 'svc-2',
-        date: addDays(today, 2),
-        militaryId: 'mil-2',
-        startTime: '08:00',
-        endTime: '20:00',
-      },
-      {
-        id: 'svc-3',
-        date: addDays(today, 3),
-        militaryId: 'mil-1',
-        startTime: '08:00',
-        endTime: '20:00',
-      },
-    ],
-    reservations: [{ date: addDays(today, 1), militaryIds: ['mil-2'] }],
-  },
-  {
-    id: 'scale-2',
-    name: 'Escala de Oficial de Dia',
-    description: 'Escala para oficiais.',
-    associatedMilitaryIds: ['mil-1', 'mil-4', 'mil-5'],
-    services: [
-      {
-        id: 'svc-4',
-        date: addDays(today, 1),
-        militaryId: 'mil-4',
-        startTime: '08:00',
-        endTime: '08:00',
-      },
-      {
-        id: 'svc-5',
-        date: addDays(today, 2),
-        militaryId: 'mil-5',
-        startTime: '08:00',
-        endTime: '08:00',
-      },
-    ],
-    reservations: [],
+    id: 'u1',
+    militaryId: '1',
+    unavailabilityTypeId: 'type-1',
+    startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    endDate: new Date(new Date().getFullYear(), new Date().getMonth(), 5),
+    reasonDetails: 'Férias anuais',
   },
 ]
 
 export const mockNotifications: Notification[] = [
   {
-    id: 'notif-1',
-    message: 'Nova indisponibilidade adicionada para Soldado Ana.',
+    id: 'n1',
+    message: 'Escala de Dezembro publicada',
     type: 'info',
     read: false,
     createdAt: new Date(),
   },
   {
-    id: 'notif-2',
-    message: 'Escala de Guarda atualizada.',
-    type: 'info',
-    read: false,
-    createdAt: subDays(new Date(), 1),
-  },
-  {
-    id: 'notif-3',
-    message: 'Conflito de escala detectado para o dia 25.',
+    id: 'n2',
+    message: 'Conflito de escala detectado para Ten. Ana',
     type: 'warning',
-    read: true,
-    createdAt: subDays(new Date(), 2),
+    read: false,
+    createdAt: new Date(Date.now() - 86400000),
+  },
+]
+
+export const mockUsers: User[] = [
+  {
+    id: 'user-1',
+    name: 'Admin User',
+    email: 'admin@sistema.com',
+    role: 'Admin',
+    avatarUrl: 'https://img.usecurling.com/ppl/thumbnail?gender=male',
+  },
+]
+
+export const mockConfigurations: Configuration[] = [
+  {
+    id: 'conf-1',
+    key: 'MAX_CONSECUTIVE_SERVICES',
+    value: '2',
+    description: 'Maximum number of consecutive services allowed',
   },
 ]

@@ -8,9 +8,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Input } from '@/components/ui/input'
 import { Trash2, Search } from 'lucide-react'
 import {
   AlertDialog,
@@ -23,30 +22,30 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { EditUserDialog } from '@/components/EditUserDialog'
-import { Badge } from '@/components/ui/badge'
+import { ManageConfigurationDialog } from '@/components/ManageConfigurationDialog'
 
-export default function AdminUsersPage() {
-  const { users, deleteUser } = useDataStore()
+export default function AdminConfigurationsPage() {
+  const { configurations, deleteConfiguration } = useDataStore()
   const [searchTerm, setSearchTerm] = useState('')
 
-  const filteredUsers = users.filter(
-    (user) =>
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()),
+  const filteredConfigurations = configurations.filter(
+    (config) =>
+      config.key.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      config.description?.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Manage Users</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Configurations</h1>
+        <ManageConfigurationDialog />
       </div>
 
       <div className="flex items-center space-x-2">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search users..."
+            placeholder="Search configurations..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-8"
@@ -58,42 +57,28 @@ export default function AdminUsersPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[50px]"></TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
+              <TableHead>Key</TableHead>
+              <TableHead>Value</TableHead>
+              <TableHead>Description</TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredUsers.length === 0 ? (
+            {filteredConfigurations.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center h-24">
-                  No users found.
+                <TableCell colSpan={4} className="text-center h-24">
+                  No configurations found.
                 </TableCell>
               </TableRow>
             ) : (
-              filteredUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>
-                    <Avatar>
-                      <AvatarImage src={user.avatarUrl} alt={user.name} />
-                      <AvatarFallback>
-                        {user.name
-                          .split(' ')
-                          .map((n) => n[0])
-                          .join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                  </TableCell>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{user.role}</Badge>
-                  </TableCell>
+              filteredConfigurations.map((config) => (
+                <TableRow key={config.id}>
+                  <TableCell className="font-medium">{config.key}</TableCell>
+                  <TableCell>{config.value}</TableCell>
+                  <TableCell>{config.description}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <EditUserDialog user={user} />
+                      <ManageConfigurationDialog configuration={config} />
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="ghost" size="icon">
@@ -102,16 +87,18 @@ export default function AdminUsersPage() {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Delete User</AlertDialogTitle>
+                            <AlertDialogTitle>
+                              Delete Configuration
+                            </AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to delete this user? This
-                              action cannot be undone.
+                              Are you sure you want to delete this
+                              configuration? This action cannot be undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
-                              onClick={() => deleteUser(user.id)}
+                              onClick={() => deleteConfiguration(config.id)}
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
                               Delete

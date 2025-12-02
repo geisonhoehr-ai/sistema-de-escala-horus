@@ -1,109 +1,92 @@
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import {
-  Home,
-  Calendar,
+  LayoutDashboard,
   Users,
+  CalendarDays,
   Shield,
-  Menu,
-  X,
-  AlertCircle,
+  Settings,
+  Clock,
+  Database,
 } from 'lucide-react'
-import { useState } from 'react'
 import useAuthStore from '@/stores/auth.store'
 
-const navItems = [
-  { href: '/', label: 'Dashboard', icon: Home },
-  { href: '/scales', label: 'Escalas', icon: Calendar },
-  { href: '/military', label: 'Militares', icon: Users },
-  {
-    href: '/admin/users',
-    label: 'Administração',
-    icon: Shield,
-    adminOnly: true,
-  },
-  {
-    href: '/admin/unavailability-types',
-    label: 'Tipos de Indisponibilidade',
-    icon: AlertCircle,
-    adminOnly: true,
-  },
-]
-
-export const Sidebar = () => {
+const Sidebar = () => {
   const location = useLocation()
-  const [isMobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { user } = useAuthStore()
+  const isAdmin = user?.role === 'Admin'
 
-  const renderNavLinks = (isMobile = false) => (
-    <nav className={cn('flex flex-col gap-2', isMobile ? 'p-4' : 'p-2')}>
-      {navItems.map((item) => {
-        if (item.adminOnly && user?.role !== 'Admin') {
-          return null
-        }
-        const isActive =
-          location.pathname === item.href ||
-          (item.href !== '/' && location.pathname.startsWith(item.href))
-        return (
-          <Link
-            key={item.href}
-            to={item.href}
-            onClick={() => isMobile && setMobileMenuOpen(false)}
-          >
-            <Button
-              variant={isActive ? 'secondary' : 'ghost'}
-              className="w-full justify-start"
-            >
-              <item.icon className="mr-2 h-4 w-4" />
-              {item.label}
-            </Button>
-          </Link>
-        )
-      })}
-    </nav>
-  )
+  const menuItems = [
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
+    { icon: CalendarDays, label: 'Scales', path: '/scales' },
+    { icon: Users, label: 'Military', path: '/military' },
+  ]
+
+  const adminItems = [
+    { icon: Shield, label: 'Permissions', path: '/admin/permissions' },
+    { icon: Users, label: 'Users', path: '/admin/users' },
+    { icon: CalendarDays, label: 'Scales', path: '/admin/scales' },
+    {
+      icon: Clock,
+      label: 'Unavailability Types',
+      path: '/admin/unavailability-types',
+    },
+    { icon: Database, label: 'Configurations', path: '/admin/configurations' },
+  ]
 
   return (
-    <>
-      <aside className="hidden lg:block fixed left-0 top-16 z-30 h-[calc(100vh-4rem)] w-60 border-r bg-secondary/50">
-        <ScrollArea className="h-full py-4">{renderNavLinks()}</ScrollArea>
-      </aside>
-
-      <div className="lg:hidden fixed top-3 left-4 z-50">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setMobileMenuOpen(!isMobileMenuOpen)}
-        >
-          <Menu className="h-6 w-6" />
-        </Button>
-      </div>
-
-      {isMobileMenuOpen && (
-        <div
-          className="lg:hidden fixed inset-0 z-50 bg-black/60 animate-fade-in"
-          onClick={() => setMobileMenuOpen(false)}
-        >
-          <div
-            className="fixed left-0 top-0 h-full w-64 bg-background p-4 animate-slide-in-from-left"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-center mb-4">
-              <span className="font-bold">Menu</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setMobileMenuOpen(false)}
+    <aside className="fixed left-0 top-14 z-30 hidden h-[calc(100vh-3.5rem)] w-64 border-r bg-background md:block">
+      <div className="space-y-4 py-4">
+        <div className="px-3 py-2">
+          <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
+            Menu
+          </h2>
+          <div className="space-y-1">
+            {menuItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={cn(
+                  'flex items-center rounded-md px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground',
+                  location.pathname === item.path
+                    ? 'bg-accent text-accent-foreground'
+                    : 'transparent',
+                )}
               >
-                <X className="h-6 w-6" />
-              </Button>
-            </div>
-            {renderNavLinks(true)}
+                <item.icon className="mr-2 h-4 w-4" />
+                {item.label}
+              </Link>
+            ))}
           </div>
         </div>
-      )}
-    </>
+
+        {isAdmin && (
+          <div className="px-3 py-2">
+            <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
+              Admin
+            </h2>
+            <div className="space-y-1">
+              {adminItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={cn(
+                    'flex items-center rounded-md px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground',
+                    location.pathname === item.path
+                      ? 'bg-accent text-accent-foreground'
+                      : 'transparent',
+                  )}
+                >
+                  <item.icon className="mr-2 h-4 w-4" />
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </aside>
   )
 }
+
+export default Sidebar

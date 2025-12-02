@@ -19,56 +19,60 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import useDataStore from '@/stores/data.store'
-import { User } from '@/types'
-import { Edit } from 'lucide-react'
+import { Configuration } from '@/types'
+import { Plus, Edit } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 const formSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  email: z.string().email('Invalid email'),
-  role: z.string().min(1, 'Role is required'),
+  key: z.string().min(1, 'Key is required'),
+  value: z.string().min(1, 'Value is required'),
+  description: z.string().optional(),
 })
 
-interface EditUserDialogProps {
-  user: User
+interface ManageConfigurationDialogProps {
+  configuration?: Configuration
+  trigger?: React.ReactNode
 }
 
-export const EditUserDialog = ({ user }: EditUserDialogProps) => {
+export const ManageConfigurationDialog = ({
+  configuration,
+  trigger,
+}: ManageConfigurationDialogProps) => {
   const [open, setOpen] = useState(false)
-  const { updateUser } = useDataStore()
+  const { addConfiguration, updateConfiguration } = useDataStore()
   const { toast } = useToast()
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: user.name,
-      email: user.email,
-      role: user.role,
+      key: configuration?.key || '',
+      value: configuration?.value || '',
+      description: configuration?.description || '',
     },
   })
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      await updateUser({
-        id: user.id,
-        ...values,
-      })
-      toast({ title: 'User updated successfully' })
+      if (configuration) {
+        await updateConfiguration({
+          id: configuration.id,
+          ...values,
+        })
+        toast({ title: 'Configuration updated' })
+      } else {
+        await addConfiguration(values)
+        toast({ title: 'Configuration added' })
+      }
       setOpen(false)
+      form.reset()
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to update user',
+        description: 'Failed to save configuration',
         variant: 'destructive',
       })
     }
@@ -77,25 +81,38 @@ export const EditUserDialog = ({ user }: EditUserDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon">
-          <Edit className="h-4 w-4" />
-        </Button>
+        {trigger ? (
+          trigger
+        ) : configuration ? (
+          <Button variant="ghost" size="icon">
+            <Edit className="h-4 w-4" />
+          </Button>
+        ) : (
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Configuration
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit User</DialogTitle>
-          <DialogDescription>Update user access and details.</DialogDescription>
+          <DialogTitle>
+            {configuration ? 'Edit Configuration' : 'Add Configuration'}
+          </DialogTitle>
+          <DialogDescription>
+            Manage system configuration settings.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="name"
+              name="key"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>Key</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input placeholder="SETTING_KEY" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -103,12 +120,12 @@ export const EditUserDialog = ({ user }: EditUserDialogProps) => {
             />
             <FormField
               control={form.control}
-              name="email"
+              name="value"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Value</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input placeholder="Setting Value" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -116,31 +133,19 @@ export const EditUserDialog = ({ user }: EditUserDialogProps) => {
             />
             <FormField
               control={form.control}
-              name="role"
+              name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Role</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select role" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Admin">Admin</SelectItem>
-                      <SelectItem value="Militar">Militar</SelectItem>
-                      <SelectItem value="User">User</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="Description..." {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
             <DialogFooter>
-              <Button type="submit">Save Changes</Button>
+              <Button type="submit">Save</Button>
             </DialogFooter>
           </form>
         </Form>

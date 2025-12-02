@@ -1,15 +1,16 @@
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
+import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-  DialogDescription,
+  DialogTrigger,
 } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Form,
   FormControl,
@@ -18,58 +19,69 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Scale } from '@/types'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
 import useDataStore from '@/stores/data.store'
-import { toast } from './ui/use-toast'
+import { Scale } from '@/types'
+import { Edit } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
+import { Checkbox } from '@/components/ui/checkbox'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
-const scaleSchema = z.object({
-  name: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
-  description: z.string().optional(),
+const formSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  description: z.string().min(1, 'Description is required'),
+  associatedMilitaryIds: z.array(z.string()),
 })
-
-type ScaleFormValues = z.infer<typeof scaleSchema>
 
 interface EditScaleDialogProps {
   scale: Scale
-  isOpen: boolean
-  onOpenChange: (isOpen: boolean) => void
 }
 
-export const EditScaleDialog = ({
-  scale,
-  isOpen,
-  onOpenChange,
-}: EditScaleDialogProps) => {
-  const updateScale = useDataStore((state) => state.updateScale)
+export const EditScaleDialog = ({ scale }: EditScaleDialogProps) => {
+  const [open, setOpen] = useState(false)
+  const { updateScale, military } = useDataStore()
+  const { toast } = useToast()
 
-  const form = useForm<ScaleFormValues>({
-    resolver: zodResolver(scaleSchema),
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       name: scale.name,
       description: scale.description,
+      associatedMilitaryIds: scale.associatedMilitaryIds,
     },
   })
 
-  const onSubmit = (data: ScaleFormValues) => {
-    updateScale({ id: scale.id, ...data })
-    toast({
-      title: 'Escala Atualizada',
-      description: `A escala "${data.name}" foi atualizada com sucesso.`,
-    })
-    onOpenChange(false)
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    try {
+      await updateScale({
+        id: scale.id,
+        ...values,
+      })
+      toast({ title: 'Scale updated successfully' })
+      setOpen(false)
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update scale',
+        variant: 'destructive',
+      })
+    }
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon">
+          <Edit className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Editar Escala</DialogTitle>
+          <DialogTitle>Edit Scale</DialogTitle>
           <DialogDescription>
-            Altere as informações da escala. Clique em salvar para aplicar as
-            mudanças.
+            Modify scale details and associated personnel.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -79,7 +91,7 @@ export const EditScaleDialog = ({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome da Escala</FormLabel>
+                  <FormLabel>Name</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -92,7 +104,7 @@ export const EditScaleDialog = ({
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Descrição</FormLabel>
+                  <FormLabel>Description</FormLabel>
                   <FormControl>
                     <Textarea {...field} />
                   </FormControl>
@@ -100,15 +112,60 @@ export const EditScaleDialog = ({
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="associatedMilitaryIds"
+              render={() => (
+                <FormItem>
+                  <div className="mb-4">
+                    <FormLabel className="text-base">
+                      Associated Military
+                    </FormLabel>
+                  </div>
+                  <ScrollArea className="h-[200px] rounded-md border p-4">
+                    {military.map((item) => (
+                      <FormField
+                        key={item.id}
+                        control={form.control}
+                        name="associatedMilitaryIds"
+                        render={({ field }) => {
+                          return (
+                            <FormItem
+                              key={item.id}
+                              className="flex flex-row items-start space-x-3 space-y-0 py-2"
+                            >
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes(item.id)}
+                                  onCheckedChange={(checked) => {
+                                    return checked
+                                      ? field.onChange([
+                                          ...field.value,
+                                          item.id,
+                                        ])
+                                      : field.onChange(
+                                          field.value?.filter(
+                                            (value) => value !== item.id,
+                                          ),
+                                        )
+                                  }}
+                                />
+                              </FormControl>
+                              <FormLabel className="font-normal">
+                                {item.rank} {item.name}
+                              </FormLabel>
+                            </FormItem>
+                          )
+                        }}
+                      />
+                    ))}
+                  </ScrollArea>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit">Salvar Alterações</Button>
+              <Button type="submit">Save Changes</Button>
             </DialogFooter>
           </form>
         </Form>

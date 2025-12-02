@@ -1,15 +1,16 @@
-import { useEffect } from 'react'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
+import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-  DialogDescription,
+  DialogTrigger,
 } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Form,
   FormControl,
@@ -17,48 +18,29 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from '@/components/ui/form'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Scale } from '@/types'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
 import useDataStore from '@/stores/data.store'
-import { toast } from './ui/use-toast'
-import { ScrollArea } from './ui/scroll-area'
+import { Plus } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
+import { Checkbox } from '@/components/ui/checkbox'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
-const scaleSchema = z.object({
-  name: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
-  description: z.string().optional(),
+const formSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  description: z.string().min(1, 'Description is required'),
   associatedMilitaryIds: z.array(z.string()),
 })
 
-type ScaleFormValues = z.infer<typeof scaleSchema>
+export const ManageScaleDialog = () => {
+  const [open, setOpen] = useState(false)
+  const { addScale, military } = useDataStore()
+  const { toast } = useToast()
 
-interface ManageScaleDialogProps {
-  scale?: Scale
-  isOpen: boolean
-  onOpenChange: (isOpen: boolean) => void
-}
-
-export const ManageScaleDialog = ({
-  scale,
-  isOpen,
-  onOpenChange,
-}: ManageScaleDialogProps) => {
-  const { addScale, updateScale, military } = useDataStore()
-  const isEditing = !!scale
-
-  const form = useForm<ScaleFormValues>({
-    resolver: zodResolver(scaleSchema),
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       description: '',
@@ -66,51 +48,34 @@ export const ManageScaleDialog = ({
     },
   })
 
-  useEffect(() => {
-    if (scale) {
-      form.reset({
-        name: scale.name,
-        description: scale.description,
-        associatedMilitaryIds: scale.associatedMilitaryIds,
-      })
-    } else {
-      form.reset({
-        name: '',
-        description: '',
-        associatedMilitaryIds: [],
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    try {
+      await addScale(values)
+      toast({ title: 'Scale created successfully' })
+      setOpen(false)
+      form.reset()
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to create scale',
+        variant: 'destructive',
       })
     }
-  }, [scale, form, isOpen])
-
-  const onSubmit = (data: ScaleFormValues) => {
-    if (isEditing && scale) {
-      updateScale({ id: scale.id, ...data })
-      toast({
-        title: 'Escala Atualizada',
-        description: `A escala "${data.name}" foi atualizada com sucesso.`,
-      })
-    } else {
-      addScale({
-        ...data,
-        associatedMilitaryIds: data.associatedMilitaryIds,
-      })
-      toast({
-        title: 'Escala Criada',
-        description: `A escala "${data.name}" foi criada com sucesso.`,
-      })
-    }
-    onOpenChange(false)
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button>
+          <Plus className="mr-2 h-4 w-4" />
+          Create Scale
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Editar' : 'Criar'} Escala</DialogTitle>
+          <DialogTitle>Create New Scale</DialogTitle>
           <DialogDescription>
-            {isEditing
-              ? 'Altere as informações da escala.'
-              : 'Preencha os dados para criar uma nova escala.'}
+            Define a new service scale and associate personnel.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -120,9 +85,9 @@ export const ManageScaleDialog = ({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome da Escala</FormLabel>
+                  <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Escala de Guarda" {...field} />
+                    <Input placeholder="e.g. Daily Officer Scale" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -133,12 +98,9 @@ export const ManageScaleDialog = ({
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Descrição</FormLabel>
+                  <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="Descrição detalhada da escala"
-                      {...field}
-                    />
+                    <Textarea placeholder="Description..." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -151,67 +113,53 @@ export const ManageScaleDialog = ({
                 <FormItem>
                   <div className="mb-4">
                     <FormLabel className="text-base">
-                      Militares Associados
+                      Associated Military
                     </FormLabel>
-                    <FormDescription>
-                      Selecione os militares que participarão desta escala.
-                    </FormDescription>
                   </div>
-                  <ScrollArea className="h-[200px] border rounded-md p-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {military.map((item) => (
-                        <FormField
-                          key={item.id}
-                          control={form.control}
-                          name="associatedMilitaryIds"
-                          render={({ field }) => {
-                            return (
-                              <FormItem
-                                key={item.id}
-                                className="flex flex-row items-start space-x-3 space-y-0"
-                              >
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value?.includes(item.id)}
-                                    onCheckedChange={(checked) => {
-                                      return checked
-                                        ? field.onChange([
-                                            ...field.value,
-                                            item.id,
-                                          ])
-                                        : field.onChange(
-                                            field.value?.filter(
-                                              (value) => value !== item.id,
-                                            ),
-                                          )
-                                    }}
-                                  />
-                                </FormControl>
-                                <FormLabel className="font-normal cursor-pointer">
-                                  {item.rank} {item.name}
-                                </FormLabel>
-                              </FormItem>
-                            )
-                          }}
-                        />
-                      ))}
-                    </div>
+                  <ScrollArea className="h-[200px] rounded-md border p-4">
+                    {military.map((item) => (
+                      <FormField
+                        key={item.id}
+                        control={form.control}
+                        name="associatedMilitaryIds"
+                        render={({ field }) => {
+                          return (
+                            <FormItem
+                              key={item.id}
+                              className="flex flex-row items-start space-x-3 space-y-0 py-2"
+                            >
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes(item.id)}
+                                  onCheckedChange={(checked) => {
+                                    return checked
+                                      ? field.onChange([
+                                          ...field.value,
+                                          item.id,
+                                        ])
+                                      : field.onChange(
+                                          field.value?.filter(
+                                            (value) => value !== item.id,
+                                          ),
+                                        )
+                                  }}
+                                />
+                              </FormControl>
+                              <FormLabel className="font-normal">
+                                {item.rank} {item.name}
+                              </FormLabel>
+                            </FormItem>
+                          )
+                        }}
+                      />
+                    ))}
                   </ScrollArea>
                   <FormMessage />
                 </FormItem>
               )}
             />
             <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit">
-                {isEditing ? 'Salvar Alterações' : 'Criar Escala'}
-              </Button>
+              <Button type="submit">Create Scale</Button>
             </DialogFooter>
           </form>
         </Form>

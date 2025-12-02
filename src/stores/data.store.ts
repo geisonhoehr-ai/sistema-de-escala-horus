@@ -7,6 +7,7 @@ import {
   User,
   Service,
   UnavailabilityTypeDefinition,
+  Configuration,
 } from '@/types'
 import { supabase } from '@/lib/supabase'
 import { format, isSameDay } from 'date-fns'
@@ -18,6 +19,7 @@ interface DataState {
   notifications: Notification[]
   users: User[]
   unavailabilityTypes: UnavailabilityTypeDefinition[]
+  configurations: Configuration[]
   activeScaleId: string | null
   isLoading: boolean
   setActiveScaleId: (id: string | null) => void
@@ -54,6 +56,12 @@ interface DataState {
   ) => Promise<void>
   deleteUnavailabilityType: (typeId: string) => Promise<void>
 
+  addConfiguration: (newConfig: Omit<Configuration, 'id'>) => Promise<void>
+  updateConfiguration: (
+    updatedConfig: Partial<Configuration> & { id: string },
+  ) => Promise<void>
+  deleteConfiguration: (configId: string) => Promise<void>
+
   updateServicesForDay: (
     scaleId: string,
     date: Date,
@@ -73,6 +81,7 @@ const useDataStore = create<DataState>((set, get) => ({
   notifications: [],
   users: [],
   unavailabilityTypes: [],
+  configurations: [],
   activeScaleId: null,
   isLoading: false,
 
@@ -90,6 +99,7 @@ const useDataStore = create<DataState>((set, get) => ({
         { data: typesData },
         { data: profilesData },
         { data: notificationsData },
+        { data: configurationsData },
       ] = await Promise.all([
         supabase.from('military').select('*'),
         supabase.from('scales').select('*'),
@@ -102,12 +112,15 @@ const useDataStore = create<DataState>((set, get) => ({
           .from('notifications')
           .select('*')
           .order('created_at', { ascending: false }),
+        supabase.from('configurations').select('*'),
       ])
 
       const processedMilitary: Military[] = (militaryData || []).map((m) => ({
         id: m.id,
         name: m.name,
         rank: m.rank,
+        unit: m.unit || 'Unknown',
+        status: m.status || 'Active',
         avatarUrl: m.avatar_url,
         email: m.email,
         phone: m.phone,
@@ -142,10 +155,10 @@ const useDataStore = create<DataState>((set, get) => ({
       ).map((u) => ({
         id: u.id,
         militaryId: u.military_id,
-        type: u.type,
+        unavailabilityTypeId: u.unavailability_type_id,
         startDate: new Date(u.start_date),
         endDate: new Date(u.end_date),
-        observations: u.observations,
+        reasonDetails: u.reason_details,
       }))
 
       const processedNotifications: Notification[] = (
@@ -172,6 +185,16 @@ const useDataStore = create<DataState>((set, get) => ({
       ).map((t) => ({
         id: t.id,
         name: t.name,
+        description: t.description,
+      }))
+
+      const processedConfigurations: Configuration[] = (
+        configurationsData || []
+      ).map((c) => ({
+        id: c.id,
+        key: c.key,
+        value: c.value,
+        description: c.description,
       }))
 
       set({
@@ -181,6 +204,7 @@ const useDataStore = create<DataState>((set, get) => ({
         notifications: processedNotifications,
         users: processedUsers,
         unavailabilityTypes: processedTypes,
+        configurations: processedConfigurations,
         activeScaleId:
           processedScales.length > 0 ? processedScales[0].id : null,
         isLoading: false,
@@ -265,9 +289,6 @@ const useDataStore = create<DataState>((set, get) => ({
   },
 
   deleteUser: async (userId) => {
-    // Note: Deleting from profiles might not delete from auth.users depending on cascading.
-    // Typically we should call an edge function to delete auth user.
-    // For now we just delete the profile record which we use for listing.
     const { error } = await supabase.from('profiles').delete().eq('id', userId)
 
     if (!error) {
@@ -283,6 +304,8 @@ const useDataStore = create<DataState>((set, get) => ({
       .insert({
         name: newMilitary.name,
         rank: newMilitary.rank,
+        unit: newMilitary.unit,
+        status: newMilitary.status,
         avatar_url: newMilitary.avatarUrl,
         email: newMilitary.email,
         phone: newMilitary.phone,
@@ -296,6 +319,8 @@ const useDataStore = create<DataState>((set, get) => ({
         id: data.id,
         name: data.name,
         rank: data.rank,
+        unit: data.unit,
+        status: data.status,
         avatarUrl: data.avatar_url,
         email: data.email,
         phone: data.phone,
@@ -311,6 +336,8 @@ const useDataStore = create<DataState>((set, get) => ({
       .update({
         name: updatedMilitary.name,
         rank: updatedMilitary.rank,
+        unit: updatedMilitary.unit,
+        status: updatedMilitary.status,
         avatar_url: updatedMilitary.avatarUrl,
         email: updatedMilitary.email,
         phone: updatedMilitary.phone,
@@ -345,10 +372,10 @@ const useDataStore = create<DataState>((set, get) => ({
       .from('unavailabilities')
       .insert({
         military_id: newUnavailability.militaryId,
-        type: newUnavailability.type,
+        unavailability_type_id: newUnavailability.unavailabilityTypeId,
         start_date: newUnavailability.startDate.toISOString(),
         end_date: newUnavailability.endDate.toISOString(),
-        observations: newUnavailability.observations,
+        reason_details: newUnavailability.reasonDetails,
       })
       .select()
       .single()
@@ -357,10 +384,10 @@ const useDataStore = create<DataState>((set, get) => ({
       const addedUnavailability: Unavailability = {
         id: data.id,
         militaryId: data.military_id,
-        type: data.type,
+        unavailabilityTypeId: data.unavailability_type_id,
         startDate: new Date(data.start_date),
         endDate: new Date(data.end_date),
-        observations: data.observations,
+        reasonDetails: data.reason_details,
       }
       set((state) => ({
         unavailabilities: [...state.unavailabilities, addedUnavailability],
@@ -370,13 +397,15 @@ const useDataStore = create<DataState>((set, get) => ({
 
   updateUnavailability: async (updatedUnavailability) => {
     const updates: any = {}
-    if (updatedUnavailability.type) updates.type = updatedUnavailability.type
+    if (updatedUnavailability.unavailabilityTypeId)
+      updates.unavailability_type_id =
+        updatedUnavailability.unavailabilityTypeId
     if (updatedUnavailability.startDate)
       updates.start_date = updatedUnavailability.startDate.toISOString()
     if (updatedUnavailability.endDate)
       updates.end_date = updatedUnavailability.endDate.toISOString()
-    if (updatedUnavailability.observations !== undefined)
-      updates.observations = updatedUnavailability.observations
+    if (updatedUnavailability.reasonDetails !== undefined)
+      updates.reason_details = updatedUnavailability.reasonDetails
 
     const { error } = await supabase
       .from('unavailabilities')
@@ -412,7 +441,7 @@ const useDataStore = create<DataState>((set, get) => ({
   addUnavailabilityType: async (newType) => {
     const { data, error } = await supabase
       .from('unavailability_types')
-      .insert({ name: newType.name })
+      .insert({ name: newType.name, description: newType.description })
       .select()
       .single()
 
@@ -420,7 +449,7 @@ const useDataStore = create<DataState>((set, get) => ({
       set((state) => ({
         unavailabilityTypes: [
           ...state.unavailabilityTypes,
-          { id: data.id, name: data.name },
+          { id: data.id, name: data.name, description: data.description },
         ],
       }))
     }
@@ -429,39 +458,15 @@ const useDataStore = create<DataState>((set, get) => ({
   updateUnavailabilityType: async (updatedType) => {
     const { error } = await supabase
       .from('unavailability_types')
-      .update({ name: updatedType.name })
+      .update({ name: updatedType.name, description: updatedType.description })
       .eq('id', updatedType.id)
 
     if (!error) {
-      // If name changed, we need to update all unavailabilities that use this type (if name is stored)
-      // Assuming backend handles relations or frontend state update is enough if ID used
-      // But here 'type' in unavailabilities is a string name based on current app logic.
-      // So we must also update unavailabilities.
-      const oldType = get().unavailabilityTypes.find(
-        (t) => t.id === updatedType.id,
-      )
-
-      if (oldType && updatedType.name && oldType.name !== updatedType.name) {
-        await supabase
-          .from('unavailabilities')
-          .update({ type: updatedType.name })
-          .eq('type', oldType.name)
-
-        set((state) => ({
-          unavailabilityTypes: state.unavailabilityTypes.map((t) =>
-            t.id === updatedType.id ? { ...t, ...updatedType } : t,
-          ),
-          unavailabilities: state.unavailabilities.map((u) =>
-            u.type === oldType.name ? { ...u, type: updatedType.name! } : u,
-          ),
-        }))
-      } else {
-        set((state) => ({
-          unavailabilityTypes: state.unavailabilityTypes.map((t) =>
-            t.id === updatedType.id ? { ...t, ...updatedType } : t,
-          ),
-        }))
-      }
+      set((state) => ({
+        unavailabilityTypes: state.unavailabilityTypes.map((t) =>
+          t.id === updatedType.id ? { ...t, ...updatedType } : t,
+        ),
+      }))
     }
   },
 
@@ -480,10 +485,67 @@ const useDataStore = create<DataState>((set, get) => ({
     }
   },
 
+  addConfiguration: async (newConfig) => {
+    const { data, error } = await supabase
+      .from('configurations')
+      .insert({
+        key: newConfig.key,
+        value: newConfig.value,
+        description: newConfig.description,
+      })
+      .select()
+      .single()
+
+    if (!error && data) {
+      set((state) => ({
+        configurations: [
+          ...state.configurations,
+          {
+            id: data.id,
+            key: data.key,
+            value: data.value,
+            description: data.description,
+          },
+        ],
+      }))
+    }
+  },
+
+  updateConfiguration: async (updatedConfig) => {
+    const { error } = await supabase
+      .from('configurations')
+      .update({
+        key: updatedConfig.key,
+        value: updatedConfig.value,
+        description: updatedConfig.description,
+      })
+      .eq('id', updatedConfig.id)
+
+    if (!error) {
+      set((state) => ({
+        configurations: state.configurations.map((c) =>
+          c.id === updatedConfig.id ? { ...c, ...updatedConfig } : c,
+        ),
+      }))
+    }
+  },
+
+  deleteConfiguration: async (configId) => {
+    const { error } = await supabase
+      .from('configurations')
+      .delete()
+      .eq('id', configId)
+
+    if (!error) {
+      set((state) => ({
+        configurations: state.configurations.filter((c) => c.id !== configId),
+      }))
+    }
+  },
+
   updateServicesForDay: async (scaleId, date, services) => {
     const formattedDate = format(date, 'yyyy-MM-dd')
 
-    // 1. Delete existing services for this day
     const { error: deleteError } = await supabase
       .from('services')
       .delete()
@@ -495,7 +557,6 @@ const useDataStore = create<DataState>((set, get) => ({
       return
     }
 
-    // 2. Insert new services
     if (services.length > 0) {
       const newServices = services.map((s) => ({
         scale_id: scaleId,
@@ -516,7 +577,6 @@ const useDataStore = create<DataState>((set, get) => ({
         return
       }
 
-      // Update local state
       const mappedNewServices: Service[] = (insertedServices || []).map(
         (svc) => ({
           id: svc.id,
@@ -541,7 +601,6 @@ const useDataStore = create<DataState>((set, get) => ({
         }),
       }))
     } else {
-      // If just deleting, update local state
       set((state) => ({
         scales: state.scales.map((scale) => {
           if (scale.id !== scaleId) return scale
@@ -557,7 +616,6 @@ const useDataStore = create<DataState>((set, get) => ({
   updateReservationForDay: async (scaleId, date, militaryIds) => {
     const formattedDate = format(date, 'yyyy-MM-dd')
 
-    // Check if exists
     const { data: existing } = await supabase
       .from('reservations')
       .select('id')
@@ -569,7 +627,6 @@ const useDataStore = create<DataState>((set, get) => ({
       if (existing) {
         await supabase.from('reservations').delete().eq('id', existing.id)
       }
-      // Local Update
       set((state) => ({
         scales: state.scales.map((scale) => {
           if (scale.id !== scaleId) return scale

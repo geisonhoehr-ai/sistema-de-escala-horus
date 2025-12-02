@@ -1,7 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import useDataStore from '@/stores/data.store'
 import {
   Table,
   TableBody,
@@ -10,16 +8,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { MoreHorizontal, PlusCircle, Trash2, Edit } from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import useDataStore from '@/stores/data.store'
-import { Scale } from '@/types'
-import { ManageScaleDialog } from '@/components/ManageScaleDialog'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Trash2, Search } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,118 +22,95 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { ManageScaleDialog } from '@/components/ManageScaleDialog'
+import { EditScaleDialog } from '@/components/EditScaleDialog'
 
 export default function AdminScalesPage() {
   const { scales, deleteScale } = useDataStore()
-  const [editingScale, setEditingScale] = useState<Scale | undefined>(undefined)
-  const [isManageDialogOpen, setIsManageDialogOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
 
-  const handleCreate = () => {
-    setEditingScale(undefined)
-    setIsManageDialogOpen(true)
-  }
-
-  const handleEdit = (scale: Scale) => {
-    setEditingScale(scale)
-    setIsManageDialogOpen(true)
-  }
+  const filteredScales = scales.filter((scale) =>
+    scale.name.toLowerCase().includes(searchTerm.toLowerCase()),
+  )
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Gerenciamento de Escalas</h1>
-          <p className="text-muted-foreground">
-            Crie, edite ou exclua escalas de serviço.
-          </p>
-        </div>
-        <Button onClick={handleCreate}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Criar Nova Escala
-        </Button>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold tracking-tight">Manage Scales</h1>
+        <ManageScaleDialog />
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
+      <div className="flex items-center space-x-2">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search scales..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+      </div>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Personnel Count</TableHead>
+              <TableHead className="w-[100px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredScales.length === 0 ? (
               <TableRow>
-                <TableHead>Nome da Escala</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead className="text-center">
-                  Militares Associados
-                </TableHead>
-                <TableHead className="w-[50px]">Ações</TableHead>
+                <TableCell colSpan={4} className="text-center h-24">
+                  No scales found.
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {scales.map((scale) => (
+            ) : (
+              filteredScales.map((scale) => (
                 <TableRow key={scale.id}>
                   <TableCell className="font-medium">{scale.name}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {scale.description}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {scale.associatedMilitaryIds.length}
-                  </TableCell>
+                  <TableCell>{scale.description}</TableCell>
+                  <TableCell>{scale.associatedMilitaryIds.length}</TableCell>
                   <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link to={`/scales/${scale.id}`} className="w-full">
-                            Ver Detalhes
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleEdit(scale)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Editar
-                        </DropdownMenuItem>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <button className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-red-600">
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Excluir
-                            </button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Esta ação não pode ser desfeita. Isso excluirá
-                                permanentemente a escala "{scale.name}".
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => deleteScale(scale.id)}
-                              >
-                                Excluir
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex items-center gap-2">
+                      <EditScaleDialog scale={scale} />
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Scale</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete this scale? This
+                              action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteScale(scale.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-      {isManageDialogOpen && (
-        <ManageScaleDialog
-          scale={editingScale}
-          isOpen={isManageDialogOpen}
-          onOpenChange={setIsManageDialogOpen}
-        />
-      )}
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   )
 }

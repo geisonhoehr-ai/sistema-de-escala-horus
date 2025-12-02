@@ -5,66 +5,127 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { CheckCircle2 } from 'lucide-react'
-
-const roles = [
-  {
-    name: 'Administrador',
-    permissions: [
-      'Pode criar, editar e excluir escalas.',
-      'Pode gerenciar todos os usuários e suas permissões.',
-      'Pode gerenciar todos os militares e suas indisponibilidades.',
-      'Pode gerar escalas automaticamente.',
-      'Acesso total ao sistema.',
-    ],
-  },
-  {
-    name: 'Militar',
-    permissions: [
-      'Pode visualizar as escalas às quais está associado.',
-      'Pode visualizar seu próprio perfil e histórico de serviços.',
-      'Pode visualizar suas próprias indisponibilidades.',
-      'Pode receber notificações do sistema.',
-    ],
-  },
-]
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { Check, X } from 'lucide-react'
 
 export default function AdminPermissionsPage() {
+  const roles = [
+    {
+      name: 'Admin',
+      description: 'Full access to all system features',
+      permissions: {
+        manageUsers: true,
+        manageScales: true,
+        manageMilitary: true,
+        manageConfigs: true,
+      },
+    },
+    {
+      name: 'Militar',
+      description: 'Access to own profile and scale viewing',
+      permissions: {
+        manageUsers: false,
+        manageScales: false,
+        manageMilitary: false,
+        manageConfigs: false,
+      },
+    },
+    {
+      name: 'User',
+      description: 'Limited read-only access',
+      permissions: {
+        manageUsers: false,
+        manageScales: false,
+        manageMilitary: false,
+        manageConfigs: false,
+      },
+    },
+  ]
+
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Gerenciamento de Permissões</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Roles & Permissions
+        </h1>
         <p className="text-muted-foreground">
-          Visualize as permissões associadas a cada papel no sistema.
+          Overview of system roles and their access levels.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid gap-6">
         {roles.map((role) => (
           <Card key={role.name}>
             <CardHeader>
-              <CardTitle>{role.name}</CardTitle>
-              <CardDescription>
-                Permissões para o papel de {role.name.toLowerCase()}.
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <CardTitle>{role.name}</CardTitle>
+                <Badge variant="outline">{role.name}</Badge>
+              </div>
+              <CardDescription>{role.description}</CardDescription>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-3">
-                {role.permissions.map((permission, index) => (
-                  <li key={index} className="flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span>{permission}</span>
-                  </li>
-                ))}
-              </ul>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Permission</TableHead>
+                    <TableHead className="text-right">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell>Manage Users</TableCell>
+                    <TableCell className="text-right">
+                      {role.permissions.manageUsers ? (
+                        <Check className="ml-auto h-4 w-4 text-green-500" />
+                      ) : (
+                        <X className="ml-auto h-4 w-4 text-red-500" />
+                      )}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Manage Scales</TableCell>
+                    <TableCell className="text-right">
+                      {role.permissions.manageScales ? (
+                        <Check className="ml-auto h-4 w-4 text-green-500" />
+                      ) : (
+                        <X className="ml-auto h-4 w-4 text-red-500" />
+                      )}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Manage Military Personnel</TableCell>
+                    <TableCell className="text-right">
+                      {role.permissions.manageMilitary ? (
+                        <Check className="ml-auto h-4 w-4 text-green-500" />
+                      ) : (
+                        <X className="ml-auto h-4 w-4 text-red-500" />
+                      )}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Manage Configurations</TableCell>
+                    <TableCell className="text-right">
+                      {role.permissions.manageConfigs ? (
+                        <Check className="ml-auto h-4 w-4 text-green-500" />
+                      ) : (
+                        <X className="ml-auto h-4 w-4 text-red-500" />
+                      )}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         ))}
       </div>
-      <p className="text-sm text-muted-foreground text-center">
-        Para esta versão do sistema, os papéis e suas permissões são fixos e não
-        podem ser editados.
-      </p>
     </div>
   )
 }

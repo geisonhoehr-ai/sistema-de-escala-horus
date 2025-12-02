@@ -12,6 +12,8 @@ export interface Military {
   id: string
   name: string
   rank: string
+  unit: string
+  status: string
   avatarUrl?: string
   email: string
   phone: string
@@ -21,15 +23,16 @@ export interface Military {
 export interface UnavailabilityTypeDefinition {
   id: string
   name: string
+  description?: string
 }
 
 export interface Unavailability {
   id: string
   militaryId: string
-  type: string
+  unavailabilityTypeId: string
   startDate: Date
   endDate: Date
-  observations?: string
+  reasonDetails?: string
 }
 
 export interface Service {
@@ -38,6 +41,7 @@ export interface Service {
   militaryId: string
   startTime: string
   endTime: string
+  observations?: string
 }
 
 export interface Reservation {
@@ -60,4 +64,11 @@ export interface Notification {
   type: 'info' | 'warning' | 'error' | 'success'
   read: boolean
   createdAt: Date
+}
+
+export interface Configuration {
+  id: string
+  key: string
+  value: string
+  description?: string
 }

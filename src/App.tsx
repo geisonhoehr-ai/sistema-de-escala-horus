@@ -15,6 +15,7 @@ import AdminUsersPage from './pages/admin/AdminUsersPage'
 import AdminScalesPage from './pages/admin/AdminScalesPage'
 import AdminPermissionsPage from './pages/admin/AdminPermissionsPage'
 import AdminUnavailabilityTypesPage from './pages/admin/AdminUnavailabilityTypesPage'
+import AdminConfigurationsPage from './pages/admin/AdminConfigurationsPage'
 import NotFound from './pages/NotFound'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import useAuthStore from './stores/auth.store'
@@ -76,6 +77,10 @@ const App = () => {
               <Route
                 path="/admin/unavailability-types"
                 element={<AdminUnavailabilityTypesPage />}
+              />
+              <Route
+                path="/admin/configurations"
+                element={<AdminConfigurationsPage />}
               />
             </Route>
           </Route>
